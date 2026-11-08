@@ -63,7 +63,7 @@ const smoothNoise = (seed: number, x: number) => {
  */
 export const wobble = (seed: number, time: number, speed = 0.3) =>
 	smoothNoise(seed, time * speed) * 0.7 +
-	smoothNoise(seed + 19, time * speed * 2.13 + 5.2) * 0.3;
+	smoothNoise(seed + 19, time * speed * 2.4082 + 3.3272) * 0.3;
 
 /** Repeatable random number in 0..1 for placing things. */
 export const scatter = (seed: number, index: number) =>

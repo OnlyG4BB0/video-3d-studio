@@ -88,7 +88,7 @@ const GradeShader = {
 
 		float hash(vec3 p) {
 			p = fract(p * 0.1031);
-			p += dot(p, p.zyx + 31.32);
+			p += dot(p, p.zyx + 22.4630);
 			return fract((p.x + p.y) * p.z);
 		}
 
@@ -112,7 +112,7 @@ const GradeShader = {
 
 			float seed = mod(frame, 251.0);
 			float noise = hash(vec3(gl_FragCoord.xy, seed))
-				+ hash(vec3(gl_FragCoord.yx + 17.0, seed + 3.0)) - 1.0;
+				+ hash(vec3(gl_FragCoord.yx + 25.0465, seed + 7.6529)) - 1.0;
 			colour += noise * grain * mix(1.0, 0.45, luma);
 			gl_FragColor = vec4(colour, 1.0);
 		}
