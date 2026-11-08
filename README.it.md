@@ -11,15 +11,15 @@ controlla il proprio lavoro e renderizza video MP4 sul tuo computer.
 
 <table>
 <tr>
-<td align="center"><img src="docs/demo/product.gif" width="190" alt="Una borraccia verde su un piedistallo con la camera che le gira attorno"><br><sub>Prodotto</sub></td>
-<td align="center"><img src="docs/demo/coffee.gif" width="190" alt="Una tazzina rossa su un piattino con la scritta BUONGIORNO"><br><sub>Scena creata su richiesta</sub></td>
-<td align="center"><img src="docs/demo/logo.gif" width="250" alt="Un logo esagonale di metallo che ruota mentre una luce gli passa dietro"><br><sub>Logo animato</sub></td>
+<td align="center"><img src="docs/demo/product.gif" width="170" alt="Una borraccia verde su un piedistallo con la camera che le gira attorno"><br><sub>Prodotto</sub></td>
+<td align="center"><img src="docs/demo/coffee.gif" width="170" alt="Una tazzina rossa su un piattino con la scritta BUONGIORNO"><br><sub>Scena creata su richiesta</sub></td>
+<td align="center"><img src="docs/demo/logo.gif" width="230" alt="Un logo esagonale di metallo che ruota mentre una luce gli passa dietro"><br><sub>Logo animato</sub></td>
 </tr>
 </table>
 <table>
 <tr>
-<td align="center"><img src="docs/demo/title.gif" width="380" alt="Lettere 3D dorate che formano la parola STUDIO su un pavimento riflettente"><br><sub>Titolo 3D</sub></td>
-<td align="center"><img src="docs/demo/room.gif" width="380" alt="Una stanza soleggiata con un tavolo, un vaso e ombre di foglie sul pavimento"><br><sub>Ambiente</sub></td>
+<td align="center"><img src="docs/demo/title.gif" width="340" alt="Lettere 3D dorate che formano la parola STUDIO su un pavimento riflettente"><br><sub>Titolo 3D</sub></td>
+<td align="center"><img src="docs/demo/room.gif" width="340" alt="Una stanza soleggiata con un tavolo, un vaso e ombre di foglie sul pavimento"><br><sub>Ambiente</sub></td>
 </tr>
 </table>
 

@@ -9,21 +9,20 @@ checks its own work, and renders MP4 clips on your computer.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Claude Code skill](https://img.shields.io/badge/Claude%20Code-skill-d97757.svg)
-![No 3D software needed](https://img.shields.io/badge/Blender-not%20needed-555.svg)
 
 [Italiano](README.it.md)
 
 <table>
 <tr>
-<td align="center"><img src="docs/demo/product.gif" width="190" alt="A green flask on a stone plinth with the camera orbiting around it"><br><sub>Product orbit</sub></td>
-<td align="center"><img src="docs/demo/coffee.gif" width="190" alt="A red coffee cup on a saucer with the word BUONGIORNO"><br><sub>Custom scene from a brief</sub></td>
-<td align="center"><img src="docs/demo/logo.gif" width="250" alt="A metal hexagonal logo turning into place with a light passing behind it"><br><sub>Logo reveal</sub></td>
+<td align="center"><img src="docs/demo/product.gif" width="170" alt="A green flask on a stone plinth with the camera orbiting around it"><br><sub>Product orbit</sub></td>
+<td align="center"><img src="docs/demo/coffee.gif" width="170" alt="A red coffee cup on a saucer with the word BUONGIORNO"><br><sub>Custom scene from a brief</sub></td>
+<td align="center"><img src="docs/demo/logo.gif" width="230" alt="A metal hexagonal logo turning into place with a light passing behind it"><br><sub>Logo reveal</sub></td>
 </tr>
 </table>
 <table>
 <tr>
-<td align="center"><img src="docs/demo/title.gif" width="380" alt="Gold 3D letters spelling STUDIO standing up on a reflective floor"><br><sub>Kinetic title</sub></td>
-<td align="center"><img src="docs/demo/room.gif" width="380" alt="A sunlit room with a table, a vase and leaf shadows on a wooden floor"><br><sub>Interior</sub></td>
+<td align="center"><img src="docs/demo/title.gif" width="340" alt="Gold 3D letters spelling STUDIO standing up on a reflective floor"><br><sub>Kinetic title</sub></td>
+<td align="center"><img src="docs/demo/room.gif" width="340" alt="A sunlit room with a table, a vase and leaf shadows on a wooden floor"><br><sub>Interior</sub></td>
 </tr>
 </table>
 
