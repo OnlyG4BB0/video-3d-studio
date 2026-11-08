@@ -1,7 +1,7 @@
 import {useFrame, useThree} from '@react-three/fiber';
 import {ThreeCanvas} from '@remotion/three';
-import React, {useEffect, useLayoutEffect, useMemo} from 'react';
-import {useCurrentFrame, useVideoConfig} from 'remotion';
+import React, {useContext, useEffect, useLayoutEffect, useMemo} from 'react';
+import {getInputProps, useCurrentFrame, useVideoConfig} from 'remotion';
 import {
 	ACESFilmicToneMapping,
 	AgXToneMapping,
@@ -10,17 +10,16 @@ import {
 	PCFShadowMap,
 	PerspectiveCamera,
 	Vector2,
-	Vector3,
 	WebGLRenderer,
 	WebGLRenderTarget,
 } from 'three';
-import {BokehPass} from 'three/examples/jsm/postprocessing/BokehPass.js';
 import {EffectComposer} from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import {OutputPass} from 'three/examples/jsm/postprocessing/OutputPass.js';
-import {RenderPass} from 'three/examples/jsm/postprocessing/RenderPass.js';
 import {ShaderPass} from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import {UnrealBloomPass} from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import type {Vec3} from './camera';
+import {AccumulatePass, BeamOptions, FocusOptions} from './accumulate';
+import {SampleBus, SampleContext} from './samples';
+import './shaderPatches';
 
 const TONES = {
 	aces: ACESFilmicToneMapping,
@@ -28,13 +27,7 @@ const TONES = {
 	neutral: NeutralToneMapping,
 };
 
-export type FocusOptions = {
-	/** The point in the scene that stays sharp. */
-	target: Vec3;
-	/** Strength of the background blur. Around 0.001 to 0.006 is useful. */
-	aperture?: number;
-	maxBlur?: number;
-};
+const DEFAULT_SAMPLES = 16;
 
 export type FinishOptions = {
 	tone?: keyof typeof TONES;
@@ -45,11 +38,22 @@ export type FinishOptions = {
 	bloomRadius?: number;
 	/** Caps extreme highlights so that a brief reflection cannot flood the frame. */
 	highlightLimit?: number;
+	/** Keeps one point sharp and blurs what is nearer or further, like a real lens. */
+	focus?: FocusOptions;
+	/** Visible shafts of light in the air, from the SunLight. */
+	beams?: BeamOptions;
+	/** Adds an S-curve to the picture, 0 to 1. */
+	contrast?: number;
+	/** 1 leaves colours unchanged. */
+	saturation?: number;
+	/** Positive is warmer, negative is cooler. About -0.1 to 0.1. */
+	warmth?: number;
+	/** Lens colour fringing towards the corners. About 0 to 0.003. */
+	fringe?: number;
 	/** Darkening of the corners, 0 to 1. */
 	vignette?: number;
 	/** Film grain, 0 to about 0.08. It also prevents banding in gradients. */
 	grain?: number;
-	focus?: FocusOptions;
 };
 
 const GradeShader = {
@@ -59,6 +63,10 @@ const GradeShader = {
 		frame: {value: 0},
 		grain: {value: 0},
 		vignette: {value: 0},
+		contrast: {value: 0},
+		saturation: {value: 1},
+		warmth: {value: 0},
+		fringe: {value: 0},
 	},
 	vertexShader: /* glsl */ `
 		varying vec2 vUv;
@@ -72,6 +80,10 @@ const GradeShader = {
 		uniform float frame;
 		uniform float grain;
 		uniform float vignette;
+		uniform float contrast;
+		uniform float saturation;
+		uniform float warmth;
+		uniform float fringe;
 		varying vec2 vUv;
 
 		float hash(vec3 p) {
@@ -81,81 +93,61 @@ const GradeShader = {
 		}
 
 		void main() {
-			vec4 colour = texture2D(tDiffuse, vUv);
-			float edge = smoothstep(0.32, 0.82, length(vUv - 0.5));
-			colour.rgb *= 1.0 - vignette * edge;
+			vec2 centred = vUv - 0.5;
+			float radius = dot(centred, centred);
+			vec2 shift = centred * radius * fringe * 4.0;
+			vec3 colour = vec3(
+				texture2D(tDiffuse, vUv + shift).r,
+				texture2D(tDiffuse, vUv).g,
+				texture2D(tDiffuse, vUv - shift).b
+			);
+
+			colour = clamp(colour, 0.0, 1.0);
+			colour = mix(colour, colour * colour * (3.0 - 2.0 * colour), contrast);
+			float luma = dot(colour, vec3(0.2126, 0.7152, 0.0722));
+			colour = max(mix(vec3(luma), colour, saturation), 0.0);
+			colour *= vec3(1.0 + warmth, 1.0, 1.0 - warmth);
+
+			colour *= 1.0 - vignette * smoothstep(0.32, 0.82, length(centred));
 
 			float seed = mod(frame, 251.0);
 			float noise = hash(vec3(gl_FragCoord.xy, seed))
 				+ hash(vec3(gl_FragCoord.yx + 17.0, seed + 3.0)) - 1.0;
-			float luma = dot(colour.rgb, vec3(0.2126, 0.7152, 0.0722));
-			colour.rgb += noise * grain * mix(1.0, 0.45, luma);
-			gl_FragColor = colour;
+			colour += noise * grain * mix(1.0, 0.45, luma);
+			gl_FragColor = vec4(colour, 1.0);
 		}
 	`,
 };
 
-const HighlightLimitShader = {
-	name: 'HighlightLimitShader',
-	uniforms: {
-		tDiffuse: {value: null},
-		limit: {value: 6},
-	},
-	vertexShader: GradeShader.vertexShader,
-	fragmentShader: /* glsl */ `
-		uniform sampler2D tDiffuse;
-		uniform float limit;
-		varying vec2 vUv;
-		void main() {
-			vec4 colour = texture2D(tDiffuse, vUv);
-			gl_FragColor = vec4(min(colour.rgb, vec3(limit)), colour.a);
-		}
-	`,
-};
-
-/** Depth of field that also works where the background shows through. */
-class FocusPass extends BokehPass {
-	render(...args: Parameters<BokehPass['render']>) {
-		const background = this.scene.background;
-		this.scene.background = null;
-		super.render(...args);
-		this.scene.background = background;
-	}
-}
-
-const Finish: React.FC<FinishOptions> = ({
+const Finish: React.FC<FinishOptions & {samples: number}> = ({
+	samples,
 	tone = 'aces',
 	exposure = 1,
-	bloom = 0.25,
+	bloom = 0.15,
 	bloomThreshold = 1,
 	bloomRadius = 0.55,
 	highlightLimit = 6,
-	vignette = 0.22,
-	grain = 0.03,
 	focus,
+	beams,
+	contrast = 0,
+	saturation = 1,
+	warmth = 0,
+	fringe = 0.0006,
+	vignette = 0.22,
+	grain = 0.025,
 }) => {
 	const gl = useThree((state) => state.gl) as WebGLRenderer;
 	const scene = useThree((state) => state.scene);
 	const camera = useThree((state) => state.camera) as PerspectiveCamera;
+	const bus = useContext(SampleContext)!;
 	const frame = useCurrentFrame();
 	const {width, height} = useVideoConfig();
-	const hasFocus = focus !== undefined;
 
 	const pipeline = useMemo(() => {
-		const target = new WebGLRenderTarget(width, height, {
-			type: HalfFloatType,
-			samples: 8,
-		});
+		const target = new WebGLRenderTarget(width, height, {type: HalfFloatType});
 		const composer = new EffectComposer(gl, target);
-		composer.addPass(new RenderPass(scene, camera));
-		const focusPass = hasFocus
-			? new FocusPass(scene, camera, {focus: 10, aperture: 0.002, maxblur: 0.01})
-			: null;
-		if (focusPass) {
-			composer.addPass(focusPass);
-		}
-		const limitPass = new ShaderPass(HighlightLimitShader);
-		composer.addPass(limitPass);
+		const accumulate = new AccumulatePass(scene, camera, bus, width, height);
+		composer.addPass(accumulate);
 		const bloomPass = new UnrealBloomPass(
 			new Vector2(width, height),
 			0,
@@ -166,36 +158,40 @@ const Finish: React.FC<FinishOptions> = ({
 		composer.addPass(new OutputPass());
 		const gradePass = new ShaderPass(GradeShader);
 		composer.addPass(gradePass);
-		return {composer, focusPass, limitPass, bloomPass, gradePass};
+		return {composer, accumulate, bloomPass, gradePass};
 		// Numeric options are applied every frame below, so they can be animated.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [gl, scene, camera, width, height, hasFocus]);
+	}, [gl, scene, camera, bus, width, height]);
 
-	useEffect(() => () => pipeline.composer.dispose(), [pipeline]);
+	useEffect(
+		() => () => {
+			pipeline.accumulate.dispose();
+			pipeline.composer.dispose();
+		},
+		[pipeline],
+	);
 
 	useLayoutEffect(() => {
 		gl.toneMapping = TONES[tone];
 		gl.toneMappingExposure = exposure;
-		pipeline.limitPass.uniforms.limit.value = highlightLimit;
+		pipeline.accumulate.settings = {
+			count: samples,
+			limit: highlightLimit,
+			focus,
+			beams,
+		};
 		pipeline.bloomPass.enabled = bloom > 0;
 		pipeline.bloomPass.strength = bloom;
 		pipeline.bloomPass.radius = bloomRadius;
 		pipeline.bloomPass.threshold = bloomThreshold;
-		pipeline.gradePass.uniforms.frame.value = frame;
-		pipeline.gradePass.uniforms.grain.value = grain;
-		pipeline.gradePass.uniforms.vignette.value = vignette;
-		if (pipeline.focusPass && focus) {
-			const uniforms = pipeline.focusPass.uniforms as Record<
-				string,
-				{value: number}
-			>;
-			uniforms.focus.value = camera.position.distanceTo(
-				new Vector3(...focus.target),
-			);
-			uniforms.aperture.value = focus.aperture ?? 0.002;
-			uniforms.maxblur.value = focus.maxBlur ?? 0.01;
-			uniforms.aspect.value = camera.aspect;
-		}
+		const grade = pipeline.gradePass.uniforms;
+		grade.frame.value = frame;
+		grade.grain.value = grain;
+		grade.vignette.value = vignette;
+		grade.contrast.value = contrast;
+		grade.saturation.value = saturation;
+		grade.warmth.value = warmth;
+		grade.fringe.value = fringe;
 	});
 
 	useFrame(() => {
@@ -205,9 +201,16 @@ const Finish: React.FC<FinishOptions> = ({
 	return null;
 };
 
+const samplesFromTools = () => {
+	const value = getInputProps().renderSamples;
+	return typeof value === 'number' ? value : undefined;
+};
+
 export type StageProps = {
 	background?: string;
 	shadows?: boolean;
+	/** Passes per frame. Normally set by the tools: more is smoother and slower. */
+	samples?: number;
 	finish?: FinishOptions;
 	children: React.ReactNode;
 };
@@ -216,10 +219,14 @@ export type StageProps = {
 export const Stage: React.FC<StageProps> = ({
 	background = '#000000',
 	shadows = true,
+	samples,
 	finish,
 	children,
 }) => {
 	const {width, height} = useVideoConfig();
+	const bus = useMemo(() => new SampleBus(), []);
+	const count = Math.max(1, samples ?? samplesFromTools() ?? DEFAULT_SAMPLES);
+
 	return (
 		<ThreeCanvas
 			width={width}
@@ -233,9 +240,11 @@ export const Stage: React.FC<StageProps> = ({
 			}}
 			camera={{fov: 35, near: 0.05, far: 300, position: [0, 0, 10]}}
 		>
-			<color attach="background" args={[background]} />
-			{children}
-			<Finish {...finish} />
+			<SampleContext.Provider value={bus}>
+				<color attach="background" args={[background]} />
+				{children}
+				<Finish {...finish} samples={count} />
+			</SampleContext.Provider>
 		</ThreeCanvas>
 	);
 };

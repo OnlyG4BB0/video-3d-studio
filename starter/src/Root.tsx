@@ -2,6 +2,7 @@ import React from 'react';
 import {Composition} from 'remotion';
 import {fitShot} from './kit';
 import {KineticTitle, kineticTitleDefaults} from './scenes/KineticTitle';
+import {LiquidForm, liquidFormDefaults} from './scenes/LiquidForm';
 import {LogoReveal, logoRevealDefaults} from './scenes/LogoReveal';
 import {MorningRoom, morningRoomDefaults} from './scenes/MorningRoom';
 import {ProductOrbit, productOrbitDefaults} from './scenes/ProductOrbit';
@@ -26,6 +27,12 @@ export const Root: React.FC = () => (
 			id="LogoReveal"
 			component={LogoReveal}
 			defaultProps={logoRevealDefaults}
+			calculateMetadata={fitShot}
+		/>
+		<Composition
+			id="LiquidForm"
+			component={LiquidForm}
+			defaultProps={liquidFormDefaults}
 			calculateMetadata={fitShot}
 		/>
 		<Composition

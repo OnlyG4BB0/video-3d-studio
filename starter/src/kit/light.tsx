@@ -11,11 +11,15 @@ import {
 	Object3D,
 	PlaneGeometry,
 	PMREMGenerator,
+	Quaternion,
 	Scene,
 	ShaderMaterial,
 	SphereGeometry,
+	Vector3,
 } from 'three';
 import type {Vec3} from './camera';
+import {pointOnDisc, useEachSample, useSampleBus} from './samples';
+import {setEnvironmentDiffuse} from './shaderPatches';
 
 type Panel = {at: Vec3; size: [number, number]; color: string; power: number};
 
@@ -51,6 +55,20 @@ const RECIPES = {
 			{at: [-9, 3, 3], size: [2, 9], color: '#ffffff', power: 11},
 			{at: [9, 3, 3], size: [2, 9], color: '#ffffff', power: 8},
 			{at: [0, 10, 0], size: [10, 5], color: '#ffffff', power: 4},
+		],
+	},
+	// Coloured light tubes, for liquid metal and glossy abstract forms.
+	neon: {
+		top: '#2a2460',
+		horizon: '#3a2a70',
+		bottom: '#120f33',
+		skyPower: 1.3,
+		panels: [
+			{at: [-8, 3, 5], size: [3.2, 12], color: '#ff2f92', power: 9},
+			{at: [8, 2, 4], size: [3.2, 12], color: '#2fb8ff', power: 9},
+			{at: [0, 10, 2], size: [12, 3.5], color: '#ffffff', power: 8},
+			{at: [3, -6, 8], size: [10, 2.5], color: '#8a5cff', power: 7},
+			{at: [-3, 1, -10], size: [4, 10], color: '#ffb35c', power: 8},
 		],
 	},
 	daylight: {
@@ -148,7 +166,13 @@ const disposeScene = (scene: Scene) => {
 
 export type EnvLightProps = {
 	preset?: EnvName;
+	/** Strength of the reflections. */
 	intensity?: number;
+	/**
+	 * How much it also lights matte surfaces, as a fraction of `intensity`.
+	 * This light casts no shadows, so keep it low when using a SkyLight.
+	 */
+	diffuse?: number;
 	/** Turns the reflections around the scene. Animate it for moving highlights. */
 	rotate?: number;
 };
@@ -157,10 +181,14 @@ export type EnvLightProps = {
 export const EnvLight: React.FC<EnvLightProps> = ({
 	preset = 'studio',
 	intensity = 1,
+	diffuse = 0.35,
 	rotate = 0,
 }) => {
 	const gl = useThree((state) => state.gl);
 	const scene = useThree((state) => state.scene);
+
+	// Materials read this when they are first compiled, after this render.
+	useMemo(() => setEnvironmentDiffuse(diffuse), [diffuse]);
 
 	const target = useMemo(() => {
 		const generator = new PMREMGenerator(gl);
@@ -182,16 +210,36 @@ export const EnvLight: React.FC<EnvLightProps> = ({
 	return null;
 };
 
+const applyShadowCamera = (
+	light: DirectionalLight,
+	extent: number,
+	far: number,
+	mapSize: number,
+) => {
+	const camera = light.shadow.camera;
+	camera.left = -extent;
+	camera.right = extent;
+	camera.top = extent;
+	camera.bottom = -extent;
+	camera.near = 0.5;
+	camera.far = far;
+	camera.updateProjectionMatrix();
+	light.shadow.mapSize.set(mapSize, mapSize);
+};
+
 export type SunLightProps = {
 	position: Vec3;
 	target?: Vec3;
 	intensity?: number;
 	color?: string;
+	/**
+	 * Size of the light in scene units. Shadows are sharp at the point of contact
+	 * and soften with distance, as they do in reality. 0 gives hard shadows.
+	 */
+	softness?: number;
 	/** Half the width of the area that receives shadows, in world units. */
 	extent?: number;
 	mapSize?: number;
-	/** Shadow edge softness. */
-	blur?: number;
 	far?: number;
 	bias?: number;
 };
@@ -202,12 +250,13 @@ export const SunLight: React.FC<SunLightProps> = ({
 	target = [0, 0, 0],
 	intensity = 3,
 	color = '#ffffff',
+	softness = 0.5,
 	extent = 6,
 	mapSize = 2048,
-	blur = 3,
 	far = 60,
 	bias = -0.0003,
 }) => {
+	const bus = useSampleBus();
 	const light = useRef<DirectionalLight>(null);
 	const aim = useMemo(() => new Object3D(), []);
 
@@ -219,18 +268,32 @@ export const SunLight: React.FC<SunLightProps> = ({
 			return;
 		}
 		current.target = aim;
-		const camera = current.shadow.camera;
-		camera.left = -extent;
-		camera.right = extent;
-		camera.top = extent;
-		camera.bottom = -extent;
-		camera.near = 0.5;
-		camera.far = far;
-		camera.updateProjectionMatrix();
-		current.shadow.mapSize.set(mapSize, mapSize);
-		current.shadow.radius = blur;
+		applyShadowCamera(current, extent, far, mapSize);
+		current.shadow.radius = 1.5;
 		current.shadow.bias = bias;
-		current.shadow.normalBias = 0.02;
+		current.shadow.normalBias = 0.015;
+		bus.sun = current;
+	});
+
+	useEachSample(({pair}) => {
+		const current = light.current;
+		if (!current) {
+			return;
+		}
+		const base = new Vector3(...position);
+		const direction = base.clone().sub(aim.position).normalize();
+		const side = new Vector3(0, 1, 0).cross(direction);
+		if (side.lengthSq() < 1e-4) {
+			side.set(1, 0, 0);
+		}
+		side.normalize();
+		const lift = direction.clone().cross(side);
+		const [u, v] = pair(11);
+		const [x, y] = pointOnDisc(u, v);
+		current.position
+			.copy(base)
+			.addScaledVector(side, x * softness)
+			.addScaledVector(lift, y * softness);
 	});
 
 	return (
@@ -243,6 +306,97 @@ export const SunLight: React.FC<SunLightProps> = ({
 				intensity={intensity}
 				color={color}
 			/>
+		</>
+	);
+};
+
+export type SkyLightProps = {
+	intensity?: number;
+	/** Colour of light arriving from straight above. */
+	zenith?: string;
+	/** Colour of light arriving from low down. */
+	horizon?: string;
+	/** Middle of the area that receives the light. */
+	centre?: Vec3;
+	extent?: number;
+	mapSize?: number;
+	/** Main direction the light comes from, for example out through a window. */
+	axis?: Vec3;
+	/** Width of the sky around `axis`, in degrees. 90 is the whole sky. */
+	spread?: number;
+};
+
+/**
+ * Soft light from the whole sky, blocked by whatever is in its way. It darkens
+ * corners, the undersides of things and the ground around objects, which is what
+ * makes them look like they are really sitting in a space.
+ */
+export const SkyLight: React.FC<SkyLightProps> = ({
+	intensity = 2,
+	zenith = '#dbe7ff',
+	horizon = '#fff1df',
+	centre = [0, 0, 0],
+	extent = 6,
+	mapSize = 1024,
+	axis = [0, 1, 0],
+	spread = 80,
+}) => {
+	const light = useRef<DirectionalLight>(null);
+	const aim = useMemo(() => new Object3D(), []);
+	const colours = useMemo(
+		() => ({top: new Color(zenith), low: new Color(horizon)}),
+		[zenith, horizon],
+	);
+	const distance = extent * 4;
+
+	useLayoutEffect(() => {
+		aim.position.set(...centre);
+		aim.updateMatrixWorld();
+		const current = light.current;
+		if (!current) {
+			return;
+		}
+		current.target = aim;
+		applyShadowCamera(current, extent, distance * 2, mapSize);
+		// The negative radius marks this light as diffuse-only. See shaderPatches.ts.
+		current.shadow.radius = -2;
+		current.shadow.bias = -0.0008;
+		current.shadow.normalBias = 0.03;
+	});
+
+	useEachSample(({pair}) => {
+		const current = light.current;
+		if (!current) {
+			return;
+		}
+		const [u, v] = pair(23);
+		const radius = Math.sqrt(u) * Math.sin(MathUtils.degToRad(spread));
+		const angle = 2 * Math.PI * v;
+		const direction = new Vector3(
+			radius * Math.cos(angle),
+			Math.sqrt(1 - radius * radius),
+			radius * Math.sin(angle),
+		).applyQuaternion(
+			new Quaternion().setFromUnitVectors(
+				new Vector3(0, 1, 0),
+				new Vector3(...axis).normalize(),
+			),
+		);
+		// Sky light always comes from above, however wide the spread is.
+		direction.y = Math.max(Math.abs(direction.y), 0.03);
+		direction.normalize();
+		current.position.copy(aim.position).addScaledVector(direction, distance);
+		current.color.lerpColors(
+			colours.low,
+			colours.top,
+			MathUtils.clamp(direction.y, 0, 1),
+		);
+	});
+
+	return (
+		<>
+			<primitive object={aim} />
+			<directionalLight ref={light} castShadow intensity={intensity} />
 		</>
 	);
 };

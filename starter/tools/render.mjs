@@ -12,6 +12,7 @@ import {
 	parseArguments,
 	PROJECT_ROOT,
 	readProps,
+	samplesFor,
 	TIMEOUT_MS,
 	withRenderer,
 } from './lib.mjs';
@@ -20,6 +21,7 @@ const QUALITY = {
 	draft: {scale: 0.5, crf: 26, imageFormat: 'jpeg', jpegQuality: 85},
 	final: {scale: 1, crf: 19, imageFormat: 'jpeg', jpegQuality: 96},
 };
+const SAMPLES = {draft: 12, final: 64};
 
 const main = async () => {
 	const {positional, flags, sets} = parseArguments(process.argv.slice(2));
@@ -41,14 +43,21 @@ const main = async () => {
 	const startedAt = Date.now();
 	let lastPercent = -10;
 
-	await withRenderer({id, inputProps, flags}, (context) =>
+	await withRenderer({id, inputProps, flags}, (context, gl) =>
 		renderMedia({
 			...context,
 			...quality,
 			codec: 'h264',
 			pixelFormat: 'yuv420p',
 			colorSpace: 'bt709',
-			inputProps,
+			inputProps: {
+				...inputProps,
+				renderSamples: samplesFor({
+					gl,
+					flags,
+					fallback: SAMPLES[flags.quality ?? 'final'],
+				}),
+			},
 			outputLocation,
 			concurrency,
 			overwrite: true,

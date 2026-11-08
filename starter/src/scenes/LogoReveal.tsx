@@ -1,7 +1,7 @@
 import React, {useMemo} from 'react';
 import {AbsoluteFill, interpolate} from 'remotion';
-import {Color} from 'three';
 import {
+	AuroraBackdrop,
 	EASE,
 	EnvLight,
 	fitDistance,
@@ -12,7 +12,9 @@ import {
 	ShotProps,
 	span,
 	Stage,
+	SunLight,
 	useExtrudedSvg,
+	useScratchMap,
 	useShot,
 	useSvgFile,
 } from '../kit';
@@ -31,8 +33,8 @@ export const logoRevealDefaults: LogoRevealProps = {
 	seconds: 5,
 	tagline: 'YOUR TAGLINE',
 	color: '#dcdde2',
-	glow: '#8fb4ff',
-	backdrop: '#07080c',
+	glow: '#9fc0ff',
+	backdrop: '#06070b',
 };
 
 const PLACEHOLDER_MARK = `
@@ -54,15 +56,12 @@ export const LogoReveal: React.FC<LogoRevealProps> = ({
 	const logo = useExtrudedSvg(loadedSvg ?? PLACEHOLDER_MARK, {
 		width: 2,
 		depth: 0.3,
-		bevel: 0.025,
+		bevel: 0.03,
 	});
+	const wear = useScratchMap({seed: 31, repeat: [1.2, 1.2], amount: 1.2});
 	const look = useMemo(
-		() => ({...LOOKS.brushedMetal(color), roughness: 0.42}),
+		() => ({...LOOKS.brushedMetal(color), roughness: 0.46}),
 		[color],
-	);
-	const glowColour = useMemo(
-		() => new Color(glow).multiplyScalar(2.2),
-		[glow],
 	);
 
 	const fov = lensFov(85, aspect);
@@ -70,43 +69,62 @@ export const LogoReveal: React.FC<LogoRevealProps> = ({
 	const distance = fitDistance(radius, fov, aspect, 1.3);
 
 	const turn = landing(frame, fps, 0.15, 'soft');
-	const sweep = span(time, 0.2, duration * 0.62, EASE.glide);
+	const sweep = span(time, 0.2, duration * 0.72, EASE.glide);
 	const taglineIn = span(time, duration * 0.55, duration * 0.8, EASE.arrive);
+	const lightsUp = span(time, 0.5, 1.6, EASE.glide);
 
 	return (
 		<AbsoluteFill>
 			<Stage
 				background={backdrop}
-				shadows={false}
 				finish={{
 					// A flat face can mirror a bright light all at once. These keep that
 					// a glint rather than a flash that fills the frame.
-					highlightLimit: 2,
-					bloom: 0.18,
+					highlightLimit: 2.2,
+					bloom: 0.16,
 					bloomThreshold: 1,
 					bloomRadius: 0.5,
+					contrast: 0.22,
+					saturation: 1.05,
 					vignette: 0.45,
-					grain: 0.03,
+					grain: 0.028,
+					beams: {density: 0.0011, reach: distance * 1.7, anisotropy: 0.55},
 				}}
 			>
-				<EnvLight preset="night" intensity={0.9} rotate={-70 + sweep * 110} />
+				<AuroraBackdrop
+					colors={['#04050a', '#0c1126', '#1c2548']}
+					intensity={0.6}
+					speed={0.1}
+				/>
+				{/* The reflections fade up, so the logo emerges from the dark as it turns. */}
+				<EnvLight
+					preset="night"
+					intensity={interpolate(lightsUp, [0, 1], [0.1, 0.9])}
+					diffuse={0.1}
+					rotate={-70 + sweep * 110}
+				/>
+				{/* Crosses behind the logo, so shafts of light pour through its shape. */}
+				<SunLight
+					position={[interpolate(sweep, [0, 1], [-4.5, 3.5]), 1.1, -9]}
+					target={[0, 0, 0]}
+					intensity={8 * lightsUp}
+					color={glow}
+					extent={3.4}
+					softness={0.25}
+					mapSize={4096}
+					far={26}
+				/>
 				<pointLight
 					position={[interpolate(sweep, [0, 1], [-3.5, 3.5]), 0.6, 2.2]}
-					intensity={6}
+					intensity={5}
 					color={glow}
 				/>
-
-				{/* A bright bar crossing behind the logo gives it a moving rim of light. */}
-				<mesh position={[interpolate(sweep, [0, 1], [-6, 6]), 0, -1.1]}>
-					<boxGeometry args={[0.05, 8, 0.05]} />
-					<meshBasicMaterial color={glowColour} />
-				</mesh>
 
 				<group rotation={[0, (turn - 1) * 1.35, 0]}>
 					<group scale={[logo.scale, -logo.scale, logo.scale]}>
 						{logo.parts.map((part, index) => (
-							<mesh key={index} geometry={part.geometry}>
-								<meshPhysicalMaterial {...look} />
+							<mesh key={index} geometry={part.geometry} castShadow receiveShadow>
+								<meshPhysicalMaterial {...look} roughnessMap={wear} />
 							</mesh>
 						))}
 					</group>

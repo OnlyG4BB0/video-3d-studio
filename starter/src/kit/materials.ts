@@ -50,6 +50,42 @@ export const LOOKS = {
 		ior: 1.5,
 		thickness: 0.7,
 	})) as Look,
+	anodized: ((color = '#2b4c7e') => ({
+		color,
+		metalness: 1,
+		roughness: 0.36,
+		clearcoat: 0.3,
+		clearcoatRoughness: 0.45,
+	})) as Look,
+	carPaint: ((color = '#7a1420') => ({
+		color,
+		metalness: 0.65,
+		roughness: 0.38,
+		clearcoat: 1,
+		clearcoatRoughness: 0.03,
+	})) as Look,
+	pearl: ((color = '#f3eee8') => ({
+		color,
+		roughness: 0.26,
+		iridescence: 1,
+		iridescenceIOR: 1.35,
+		iridescenceThicknessRange: [180, 420],
+		clearcoat: 0.6,
+		clearcoatRoughness: 0.15,
+	})) as Look,
+	oilSlick: ((color = '#c9ccd6') => ({
+		color,
+		metalness: 1,
+		roughness: 0.1,
+		iridescence: 1,
+		iridescenceIOR: 1.8,
+		iridescenceThicknessRange: [120, 620],
+	})) as Look,
+	liquidChrome: ((color = '#e9ebf0') => ({
+		color,
+		metalness: 1,
+		roughness: 0.035,
+	})) as Look,
 };
 
 export type LookName = keyof typeof LOOKS;

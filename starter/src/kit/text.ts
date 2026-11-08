@@ -1,7 +1,8 @@
 import * as opentype from 'opentype.js';
 import {useMemo} from 'react';
-import {ExtrudeGeometry, ShapePath} from 'three';
+import {BufferGeometry, ExtrudeGeometry, ShapePath} from 'three';
 import {usePublicFile} from './assets';
+import {softenBevels} from './geometry';
 
 export const DEFAULT_FONT_FILE = 'fonts/ArchivoBlack-Regular.ttf';
 
@@ -29,7 +30,7 @@ export type Letter = {
 	count: number;
 	line: number;
 	/** Centred on the letter, so that rotation pivots around its middle. */
-	geometry: ExtrudeGeometry;
+	geometry: BufferGeometry;
 	x: number;
 	y: number;
 	width: number;
@@ -99,15 +100,17 @@ const layoutWord = (
 				pen += font.getKerningValue(previous, glyph) * scale;
 			}
 			if (char.trim() !== '') {
-				const geometry = new ExtrudeGeometry(glyphShapes(glyph, scale), {
-					depth,
-					curveSegments: 12,
-					bevelEnabled: bevel > 0,
-					bevelThickness: bevel,
-					bevelSize: bevel,
-					bevelOffset: -bevel * 0.5,
-					bevelSegments: 5,
-				});
+				const geometry = softenBevels(
+					new ExtrudeGeometry(glyphShapes(glyph, scale), {
+						depth,
+						curveSegments: 16,
+						bevelEnabled: bevel > 0,
+						bevelThickness: bevel,
+						bevelSize: bevel,
+						bevelOffset: -bevel * 0.5,
+						bevelSegments: 8,
+					}),
+				);
 				geometry.computeBoundingBox();
 				const box = geometry.boundingBox!;
 				const centreX = (box.min.x + box.max.x) / 2;

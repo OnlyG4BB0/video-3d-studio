@@ -10,6 +10,7 @@ import {
 	fail,
 	parseArguments,
 	readProps,
+	samplesFor,
 	TIMEOUT_MS,
 	withRenderer,
 } from './lib.mjs';
@@ -112,10 +113,13 @@ const main = async () => {
 	const inputProps = readProps(flags, sets);
 	const brightness = new Map();
 
-	await withRenderer({id, inputProps, flags}, ({puppeteerInstance: _shared, ...context}) =>
+	await withRenderer({id, inputProps, flags}, ({puppeteerInstance: _shared, ...context}, gl) =>
 		renderFrames({
 			...context,
-			inputProps,
+			inputProps: {
+				...inputProps,
+				renderSamples: samplesFor({gl, flags, fallback: 4}),
+			},
 			imageFormat: 'png',
 			outputDir: null,
 			scale: 0.1,

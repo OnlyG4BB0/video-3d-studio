@@ -10,6 +10,7 @@ Everything here is imported from `../kit` inside a scene. Lengths are in scene u
 - Camera
 - Light
 - Materials and textures
+- Shaders
 - Geometry
 - Text, logos and models
 - Motion
@@ -28,7 +29,7 @@ Run from the project folder. `--set name=value` overrides any prop of the shot a
 | `npm run check` | Type-check the code |
 | `npm run studio` | Live preview in the browser, for the user |
 
-All three tools take `--props-file shot.json` and `--gl angle` or `--gl swangle`. `render` and `check-motion` also take `--concurrency 2`.
+All three tools take `--props-file shot.json`, `--gl angle` or `--gl swangle`, and `--samples 32` to set the passes per frame. The defaults are 24 for stills, 4 for the motion check, 12 for a draft and 64 for a final render. `render` and `check-motion` also take `--concurrency 2`.
 
 Common props: `format` (`vertical`, `wide`, `square`), `seconds`, `fps`.
 
@@ -41,7 +42,7 @@ Scene props extend `ShotProps`. Register each scene in `Root.tsx` with `calculat
 ## Stage and picture finish
 
 ```tsx
-<Stage background="#111" shadows finish={{tone: 'neutral', bloom: 0.1, vignette: 0.3, grain: 0.03}}>
+<Stage background="#111" shadows finish={{tone: 'neutral', bloom: 0.1, contrast: 0.2, vignette: 0.3}}>
   ...
 </Stage>
 ```
@@ -49,14 +50,21 @@ Scene props extend `ShotProps`. Register each scene in `Root.tsx` with `calculat
 | `finish` option | Meaning | Useful range |
 |---|---|---|
 | `tone` | `neutral` keeps colours true, `aces` adds contrast, `agx` is gentle on very bright scenes | |
-| `exposure` | Overall brightness | 0.8 to 1.6 |
-| `bloom` | Glow around highlights | 0 to 0.3, higher only for neon |
+| `exposure` | Overall brightness | 0.8 to 1.8 |
+| `bloom` | Glow around highlights | 0 to 0.3 |
 | `bloomThreshold` | How bright something must be to glow | 1 to 2.5 |
 | `bloomRadius` | How far the glow spreads | 0.3 to 0.8 |
 | `highlightLimit` | Caps extreme highlights, so a brief reflection cannot flood the frame | 2 for flat shiny things, default 6 |
+| `focus` | `{target, aperture}` real lens blur around a point. `aperture` is in scene units | 0.01 subtle, 0.05 product, 0.1 strong |
+| `beams` | `{density, reach, anisotropy}` visible shafts of light from the `SunLight` | density 0.001 to 0.01 |
+| `contrast` | S-curve over the picture | 0.15 to 0.35 |
+| `saturation` | 1 leaves colours unchanged | 1 to 1.2 |
+| `warmth` | Positive is warmer | -0.05 to 0.05 |
+| `fringe` | Lens colour fringing towards the corners | 0 to 0.002 |
 | `vignette` | Darker corners | 0.2 to 0.45 |
 | `grain` | Film grain, also hides banding | 0.02 to 0.04 |
-| `focus` | `{target, aperture, maxBlur}` blurs what is away from `target` | aperture 0.001 to 0.006 |
+
+`useEachSample(({pair, index, count}) => { ... })` runs before each of a frame's passes, for effects that should blur. `pair(seed)` returns two evenly spread numbers from 0 to 1, and `pointOnDisc(u, v)` turns them into a point on a disc. `KineticTitle` uses it to make its floor reflection glossy.
 
 ## Camera
 
@@ -76,9 +84,11 @@ Both accept `easing` and `roll`. `PathCamera` also accepts `start` and `end` in 
 
 ## Light
 
-`<EnvLight preset intensity rotate />` is image-based light and what shiny things reflect. Presets are `studio` (dark with softboxes), `showcase` (adds a large panel behind the camera for flat metal faces), `daylight`, `dusk` and `night`. Animate `rotate` to move highlights across a still object.
+`<EnvLight preset intensity diffuse rotate />` is image-based light and what shiny things reflect. Presets are `studio` (dark with softboxes), `showcase` (adds a large panel behind the camera for flat metal faces), `neon` (coloured tubes for liquid metal), `daylight`, `dusk` and `night`. `diffuse` is how much it also lights matte surfaces. It casts no shadows, so keep it at 0.05 to 0.1 when using a `SkyLight`. Animate `rotate` to move highlights across a still object.
 
-`<SunLight position target intensity color extent mapSize blur />` is the shadow-casting key. Set `extent` just large enough to cover the subject, because a smaller area gives finer shadows.
+`<SkyLight intensity zenith horizon centre extent axis spread />` is soft light from the whole sky that objects block, which gives natural darkening in corners and around contact points. For a room, aim `axis` out through the window and narrow `spread` to about 40. Set `extent` just large enough to cover the scene.
+
+`<SunLight position target intensity color softness extent mapSize far />` is the main light. `softness` is the size of the light in scene units: shadows stay sharp at the point of contact and soften with distance. Set `extent` just large enough to cover the subject, because a smaller area gives finer shadows.
 
 R3F's own lights work too: `<pointLight />`, `<hemisphereLight />`. They cast no shadows here.
 
@@ -88,15 +98,43 @@ R3F's own lights work too: `<pointLight />`, `<hemisphereLight />`. They cast no
 <meshPhysicalMaterial {...LOOKS.powderCoat('#1f4e46')} roughness={0.44} bumpMap={noise} bumpScale={0.35} />
 ```
 
-`LOOKS` has `chrome`, `brushedMetal`, `gold`, `powderCoat`, `glossPlastic`, `ceramic`, `rubber`, `velvet`, `stone`, `plaster` and `glass`.
+`LOOKS` has `chrome`, `brushedMetal`, `gold`, `anodized`, `powderCoat`, `glossPlastic`, `carPaint`, `ceramic`, `pearl`, `oilSlick`, `liquidChrome`, `rubber`, `velvet`, `stone`, `plaster` and `glass`.
 
-`useNoiseTexture({seed, repeat, periods, contrast})` makes grey noise for `bumpMap` or `roughnessMap`. `usePlankTexture({base, planks, repeat})` makes a timber floor. `useRadialFade(solidUntil)` makes an `alphaMap` that dissolves a floor into the background.
+| Hook | Use it for |
+|---|---|
+| `useTimber({light, dark, planks, repeat})` | Boards. Returns `map`, `roughnessMap` and `bumpMap` to spread onto a material |
+| `useScratchMap({repeat, amount})` | `roughnessMap` of fingerprints and hairline scratches, for metal and gloss |
+| `useBrushedMap({repeat})` | `roughnessMap` of fine lines along U, for turned metal |
+| `useRidgeMap(count)` | `bumpMap` of grip ridges around a turned part |
+| `useWeaveMap({repeat})` | `bumpMap` of woven cloth |
+| `useSpeckleMap({base, flecks, density, maxSize, repeat})` | Colour map for terrazzo or speckled glaze |
+| `useNoiseTexture({seed, repeat, periods, contrast})` | Grey noise for `bumpMap` or `roughnessMap` |
+| `usePrintMap(font, lines, color)` | Text printed on a transparent sleeve above an object |
+| `useCanvasTexture(draw, {repeat, key})` | Anything you can draw with the 2D canvas API |
+| `useRadialFade(solidUntil)` | `alphaMap` that dissolves a floor into the background |
+
+Lathe UVs are in scene units, so `repeat: [24, 24]` means 24 tiles per unit. Use whole numbers so that the texture joins up around the seam.
+
+## Shaders
+
+`<AuroraBackdrop colors intensity speed seed />` draws slowly drifting folds of colour behind everything, for dark abstract scenes.
+
+`useLiquidMaterial(look, {amplitude, frequency, speed})` makes a finely divided sphere ripple like slow liquid, with correct reflections and shadows:
+
+```tsx
+const liquid = useLiquidMaterial(LOOKS.oilSlick(), {amplitude: 0.6, frequency: 1.15});
+<mesh material={liquid.material} customDepthMaterial={liquid.depthMaterial} castShadow>
+  <icosahedronGeometry args={[1, 96]} />
+</mesh>
+```
+
+For a custom look, patch a material with `onBeforeCompile` as `shaders.tsx` does, and drive it from `useShot().time`.
 
 ## Geometry
 
 `useLathe(points, {segments, steps})` spins an outline into a solid. Give points as `[radius, height]` or `[radius, height, cornerRounding]`, from the bottom up, starting and ending at radius 0.
 
-`useRoundedBox(width, height, depth, radius)` returns a box with soft edges. `<Cyclorama color radius height curve />` is a seamless studio backdrop that allows a full orbit.
+`useRoundedBox(width, height, depth, radius)` returns a box with soft edges. `<Cyclorama color radius height curve />` is a seamless studio backdrop that allows a full orbit. `softenBevels(geometry)` smooths bevels on extruded shapes so highlights roll around the edge. Text and SVG logos already use it.
 
 ## Text, logos and models
 

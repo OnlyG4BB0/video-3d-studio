@@ -14,7 +14,7 @@ export const PROJECT_ROOT = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
 	'..',
 );
-export const TIMEOUT_MS = 180_000;
+export const TIMEOUT_MS = 600_000;
 
 const splitOnce = (text, separator) => {
 	const at = text.indexOf(separator);
@@ -119,12 +119,15 @@ export const withRenderer = async ({id, inputProps, flags}, work) => {
 			console.log(
 				`${id}: ${composition.width}x${composition.height}, ${composition.durationInFrames} frames at ${composition.fps} fps (renderer: ${gl})`,
 			);
-			return await work({
-				serveUrl,
-				composition,
-				chromiumOptions,
-				puppeteerInstance,
-			});
+			return await work(
+				{
+					serveUrl,
+					composition,
+					chromiumOptions,
+					puppeteerInstance,
+				},
+				gl,
+			);
 		} catch (error) {
 			const canRetry = attempt < candidates.length - 1 && isGraphicsFailure(error);
 			if (!canRetry) {
@@ -136,6 +139,15 @@ export const withRenderer = async ({id, inputProps, flags}, work) => {
 		}
 	}
 	return undefined;
+};
+
+/**
+ * How many passes to average per frame. Software rendering has no graphics card
+ * to lean on, so it gets far fewer.
+ */
+export const samplesFor = ({gl, flags, fallback}) => {
+	const wanted = Number(flags.samples ?? fallback);
+	return gl === 'swangle' ? Math.min(wanted, 4) : wanted;
 };
 
 export const defaultConcurrency = () =>

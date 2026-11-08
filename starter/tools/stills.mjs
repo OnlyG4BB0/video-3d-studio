@@ -11,6 +11,7 @@ import {
 	parseArguments,
 	PROJECT_ROOT,
 	readProps,
+	samplesFor,
 	TIMEOUT_MS,
 	withRenderer,
 } from './lib.mjs';
@@ -32,7 +33,11 @@ const main = async () => {
 		}
 	}
 
-	await withRenderer({id, inputProps, flags}, async (context) => {
+	await withRenderer({id, inputProps, flags}, async (context, gl) => {
+		const renderProps = {
+			...inputProps,
+			renderSamples: samplesFor({gl, flags, fallback: 24}),
+		};
 		const last = context.composition.durationInFrames - 1;
 		const frames = flags.frames
 			? flags.frames.split(',').map(Number)
@@ -50,7 +55,7 @@ const main = async () => {
 			);
 			await renderStill({
 				...context,
-				inputProps,
+				inputProps: renderProps,
 				frame,
 				output,
 				imageFormat: 'jpeg',

@@ -1,7 +1,8 @@
 import {useMemo} from 'react';
-import {Color, ExtrudeGeometry, Shape} from 'three';
+import {BufferGeometry, Color, ExtrudeGeometry, Shape} from 'three';
 import {SVGLoader} from 'three/examples/jsm/loaders/SVGLoader.js';
 import {usePublicFile} from './assets';
+import {softenBevels} from './geometry';
 
 /** Reads an .svg from public/ as text. Returns null when no file is given. */
 export const useSvgFile = (file?: string) =>
@@ -14,7 +15,7 @@ export type SvgOptions = {
 	bevel?: number;
 };
 
-export type SvgPart = {geometry: ExtrudeGeometry; color: Color};
+export type SvgPart = {geometry: BufferGeometry; color: Color};
 
 export type ExtrudedSvg = {
 	parts: SvgPart[];
@@ -59,16 +60,24 @@ const buildExtrudedSvg = (
 	const centreY = (minY + maxY) / 2;
 
 	const parts = shapes.map(({shape, color}) => {
-		const geometry = new ExtrudeGeometry(shape, {
-			depth: depth / scale,
-			curveSegments: 32,
-			bevelEnabled: bevel > 0,
-			bevelThickness: bevel / scale,
-			bevelSize: bevel / scale,
-			bevelOffset: -(bevel / scale) * 0.5,
-			bevelSegments: 5,
-		});
+		const geometry = softenBevels(
+			new ExtrudeGeometry(shape, {
+				depth: depth / scale,
+				curveSegments: 32,
+				bevelEnabled: bevel > 0,
+				bevelThickness: bevel / scale,
+				bevelSize: bevel / scale,
+				bevelOffset: -(bevel / scale) * 0.5,
+				bevelSegments: 8,
+			}),
+		);
 		geometry.translate(-centreX, -centreY, -depth / scale / 2);
+		// In scene units, so that textures have the same scale on every logo.
+		const uv = geometry.attributes.uv;
+		for (let i = 0; i < uv.count; i++) {
+			uv.setXY(i, uv.getX(i) * scale, uv.getY(i) * scale);
+		}
+		uv.needsUpdate = true;
 		return {geometry, color};
 	});
 

@@ -22,7 +22,12 @@ checks its own work, and renders MP4 clips on your computer.
 <table>
 <tr>
 <td align="center"><img src="docs/demo/title.gif" width="340" alt="Gold 3D letters spelling STUDIO standing up on a reflective floor"><br><sub>Kinetic title</sub></td>
-<td align="center"><img src="docs/demo/room.gif" width="340" alt="A sunlit room with a table, a vase and leaf shadows on a wooden floor"><br><sub>Interior</sub></td>
+<td align="center"><img src="docs/demo/room.gif" width="340" alt="A sunlit room with a table, a plant and leaf shadows on a wooden floor"><br><sub>Interior</sub></td>
+</tr>
+</table>
+<table>
+<tr>
+<td align="center"><img src="docs/demo/liquid.gif" width="300" alt="An iridescent liquid metal form rippling under coloured neon lights"><br><sub>Liquid shader</sub></td>
 </tr>
 </table>
 
@@ -35,10 +40,21 @@ checks its own work, and renders MP4 clips on your computer.
 - **Product shots.** Orbit around an object built in code, or drop in your own `.glb` model.
 - **3D logo reveals.** Give it an `.svg` and it extrudes, lights and animates it, with an optional tagline.
 - **Kinetic titles.** Solid letters animated one by one, in the built-in font or your own `.ttf` / `.otf`, with accented characters.
-- **Rooms and atmospheres.** Sunlight, window shadows, moving leaf shadows.
+- **Rooms and atmospheres.** Sunlight through a window, moving leaf shadows, shafts of light in the air.
+- **Abstract shader pieces.** Liquid metal, iridescent surfaces, drifting colour backdrops.
 - **Custom scenes.** Ask for something new and Claude models it from the kit's building blocks.
 - **Every social format.** 9:16, 16:9 and 1:1 from the same scene, with framing that adapts.
 - **Notes in plain language.** "Warmer light" or "slower camera" changes that one thing.
+
+### 64 passes per frame
+
+Each video frame is drawn 64 times with small variations and averaged. The light moves, the lens moves, the pixels shift by a fraction. That single technique produces:
+
+- **Soft shadows** that stay sharp at the point of contact and melt with distance
+- **Sky occlusion**, the natural darkening in corners and under objects
+- **Real lens blur** rather than a post-processing imitation
+- **Glossy reflections** that are crisp at the floor and dissolve above it
+- **Volumetric beams** that come out smooth, without banding
 
 ### It checks its own work
 
@@ -114,12 +130,14 @@ Each shot is a [Remotion](https://www.remotion.dev) composition built with [thre
 | Part | What it gives you |
 |---|---|
 | Camera | Real lens sizes, orbit and path moves, subtle handheld drift, framing that fits any format |
-| Light | Procedural studio, showcase, daylight, dusk and night environments, plus soft shadows |
-| Materials | Chrome, brushed metal, gold, powder coat, gloss plastic, ceramic, rubber, velvet, stone, plaster, glass |
-| Geometry | Revolved shapes with rounded corners, soft boxes, seamless studio backdrops |
+| Light | Sun with real softness, occluded sky light, volumetric beams, six procedural environments |
+| Materials | Chrome, brushed metal, gold, anodized, powder coat, car paint, gloss plastic, ceramic, pearl, oil slick, liquid chrome, rubber, velvet, stone, plaster, glass |
+| Surfaces | Procedural timber, scratches, brushing, grip ridges, woven cloth, terrazzo, printed labels |
+| Shaders | Rippling liquid material with correct shadows, drifting aurora backdrop |
+| Geometry | Revolved shapes with rounded corners, soft boxes, smooth bevels, seamless studio backdrops |
 | Files | SVG extrusion, TTF/OTF letters, GLB models |
 | Motion | Springs, easing, staggering, repeatable noise for renders that come out the same every time |
-| Finish | Tone mapping, bloom, depth of field, vignette, film grain |
+| Finish | Tone mapping, bloom, lens blur, contrast and colour grade, colour fringing, vignette, film grain |
 
 Claude reads the [workflow](SKILL.md), the [toolkit reference](references/toolkit.md) and the [notes on lens, light and timing](references/craft.md) as it needs them.
 
@@ -136,14 +154,14 @@ Any setting can be changed with `--set`, for example `--set format=vertical --se
 
 ## Good to know
 
-**Tested on** Windows 11 with an RTX 3060 and Node.js 23.2, where clips of 5 to 8 seconds rendered in 14 to 26 seconds. macOS and Linux should work but have not been tested yet, so reports are welcome. Without a graphics card, expect much longer renders.
+**Tested on** Windows 11 with an RTX 3060 and Node.js 23.2, where clips of 5 to 8 seconds rendered in 36 to 88 seconds at full quality. macOS and Linux should work but have not been tested yet, so reports are welcome. Without a graphics card it falls back to 4 passes per frame, which looks rougher and takes much longer.
 
 **Disk space.** Each project takes about 1 GB, and the first render in each project downloads a 130 MB headless browser.
 
 **Current limits**
 
 - There is no true motion blur, so very fast moves can look stepped.
-- Lighting is real-time rather than ray traced. Light does not bounce by itself, so interiors are the least photorealistic scenes.
+- Lighting is not full ray tracing. Light does not bounce by itself, so interiors are the least photorealistic scenes.
 - SVG logos need filled shapes, so strokes must be converted to outlines first.
 
 ## Licences

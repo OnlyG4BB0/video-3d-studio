@@ -1,3 +1,4 @@
+export * from './accumulate';
 export * from './assets';
 export * from './camera';
 export * from './geometry';
@@ -5,6 +6,9 @@ export * from './light';
 export * from './materials';
 export * from './model';
 export * from './motion';
+export {useEachSample, pointOnDisc} from './samples';
+export type {Sample} from './samples';
+export * from './shaders';
 export * from './shot';
 export * from './stage';
 export * from './svg';

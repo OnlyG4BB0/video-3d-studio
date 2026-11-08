@@ -19,7 +19,12 @@ controlla il proprio lavoro e renderizza video MP4 sul tuo computer.
 <table>
 <tr>
 <td align="center"><img src="docs/demo/title.gif" width="340" alt="Lettere 3D dorate che formano la parola STUDIO su un pavimento riflettente"><br><sub>Titolo 3D</sub></td>
-<td align="center"><img src="docs/demo/room.gif" width="340" alt="Una stanza soleggiata con un tavolo, un vaso e ombre di foglie sul pavimento"><br><sub>Ambiente</sub></td>
+<td align="center"><img src="docs/demo/room.gif" width="340" alt="Una stanza soleggiata con un tavolo, una pianta e ombre di foglie sul pavimento"><br><sub>Ambiente</sub></td>
+</tr>
+</table>
+<table>
+<tr>
+<td align="center"><img src="docs/demo/liquid.gif" width="300" alt="Una forma di metallo liquido iridescente che ondeggia sotto luci al neon colorate"><br><sub>Shader liquido</sub></td>
 </tr>
 </table>
 
@@ -32,10 +37,21 @@ controlla il proprio lavoro e renderizza video MP4 sul tuo computer.
 - **Video di prodotto.** La camera gira attorno a un oggetto costruito con il codice, oppure al tuo modello `.glb`.
 - **Loghi animati in 3D.** Da un file `.svg` crea un logo solido, lo illumina e lo anima, con uno slogan opzionale.
 - **Titoli 3D.** Lettere solide animate una a una, con il font incluso o con il tuo `.ttf` / `.otf`, accenti compresi.
-- **Stanze e atmosfere.** Luce del sole, ombre delle finestre, ombre di foglie in movimento.
+- **Stanze e atmosfere.** Sole che entra dalla finestra, ombre di foglie in movimento, raggi di luce nell'aria.
+- **Pezzi astratti con shader.** Metallo liquido, superfici iridescenti, sfondi di colore in movimento.
 - **Scene su misura.** Chiedi qualcosa di nuovo e Claude lo modella con i pezzi del kit.
 - **Tutti i formati social.** 9:16, 16:9 e 1:1 dalla stessa scena, con un'inquadratura che si adatta.
 - **Modifiche a parole.** "Luce più calda" o "camera più lenta" cambiano solo quello.
+
+### 64 passaggi per ogni fotogramma
+
+Ogni fotogramma viene disegnato 64 volte con piccole variazioni e poi mediato. La luce si sposta, l'obiettivo si sposta, i pixel si muovono di una frazione. Da questa sola tecnica nascono:
+
+- **Ombre morbide**, nitide nel punto di contatto e sfumate con la distanza
+- **Occlusione del cielo**, il naturale scurirsi di angoli e zone sotto gli oggetti
+- **Sfocatura vera dell'obiettivo**, non un'imitazione applicata dopo
+- **Riflessi lucidi**, netti sul pavimento e sempre più sfumati verso l'alto
+- **Raggi volumetrici** uniformi, senza bande visibili
 
 ### Controlla il proprio lavoro
 
@@ -106,14 +122,14 @@ Ogni impostazione si può cambiare con `--set`, ad esempio `--set format=vertica
 
 ## Da sapere
 
-**Provata su** Windows 11 con RTX 3060 e Node.js 23.2, dove video da 5 a 8 secondi hanno richiesto da 14 a 26 secondi. Dovrebbe funzionare anche su macOS e Linux, ma non è ancora stata provata: le segnalazioni sono benvenute. Senza scheda grafica i tempi sono molto più lunghi.
+**Provata su** Windows 11 con RTX 3060 e Node.js 23.2, dove video da 5 a 8 secondi hanno richiesto da 36 a 88 secondi alla massima qualità. Dovrebbe funzionare anche su macOS e Linux, ma non è ancora stata provata: le segnalazioni sono benvenute. Senza scheda grafica passa a 4 passaggi per fotogramma, con un risultato più grezzo e tempi molto più lunghi.
 
 **Spazio su disco.** Ogni progetto occupa circa 1 GB e il primo render di ogni progetto scarica un browser da 130 MB.
 
 **Limiti attuali**
 
 - Non c'è un vero motion blur, quindi i movimenti molto veloci possono sembrare a scatti.
-- L'illuminazione è in tempo reale e non ray tracing. La luce non rimbalza da sola, quindi gli interni sono le scene meno fotorealistiche.
+- L'illuminazione non è un ray tracing completo. La luce non rimbalza da sola, quindi gli interni sono le scene meno fotorealistiche.
 - I loghi SVG devono usare forme piene, quindi i contorni vanno convertiti in tracciati.
 
 ## Licenze

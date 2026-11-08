@@ -40,12 +40,13 @@ Files the user supplies go in the project's `public/` folder.
 | A word or short title | `src/scenes/KineticTitle.tsx` | `text`, `fontFile`, `color`, `backdrop` |
 | A logo | `src/scenes/LogoReveal.tsx` | `logoFile`, `tagline`, `color`, `glow`, `backdrop` |
 | A room, place or atmosphere | `src/scenes/MorningRoom.tsx` | `wall`, `accent` |
+| Something abstract, liquid or shader-driven | `src/scenes/LiquidForm.tsx` | `look` |
 
 If the request only changes those settings, pass them with `--set` and leave the code alone. Otherwise copy the scene to a new file, register it in `src/Root.tsx`, and change the copy, so the examples stay available as references.
 
 Before writing scene code, read `references/toolkit.md`, which lists what the kit provides. For decisions about lens, light, material and timing, read `references/craft.md`.
 
-Without a model file, build the object from the kit's pieces: `useLathe` for anything round, `useRoundedBox` for anything boxy, `useExtrudedSvg` for flat silhouettes, grouped together. Small details such as seams, rings and slightly rounded edges are what make a simple model believable.
+Without a model file, build the object from the kit's pieces: `useLathe` for anything round, `useRoundedBox` for anything boxy, `useExtrudedSvg` for flat silhouettes, grouped together. Small details such as seams, rings, grip ridges, printed text and slightly rounded edges are what make a simple model believable, so give every object a few of them and a surface map from the kit. A plain colour on a smooth shape always looks like a placeholder.
 
 ### What keeps a render correct
 
@@ -54,6 +55,7 @@ Remotion renders frames out of order and in several browser tabs at once, so a f
 - Compute everything that changes from `useShot()`. `useState`, `useFrame` animation, `Math.random()` and `Date` give flicker or jumps, so use `wobble` and `scatter` for randomness.
 - Load only from `public/`, through `usePublicFile` or the hooks built on it. A render must not depend on the network.
 - Keep 3D inside `<Stage>`. It owns the render pipeline, so do not add a second render loop or set tone mapping elsewhere.
+- Every frame is drawn many times and averaged, which is where soft shadows, real focus blur and clean edges come from. Anything that should blur within a frame goes in `useEachSample`.
 - Put small text in a normal `AbsoluteFill` above the Stage, as `LogoReveal` does. It stays sharper than 3D text at small sizes.
 
 ## 4. Check stills before rendering
@@ -89,7 +91,7 @@ Stills sample only a few moments, so a flash lasting a few frames slips between 
 node tools/render.mjs <Shot> --set format=vertical --out out/<name>.mp4
 ```
 
-Use `--quality draft` for a half-resolution test. Shots of 5 to 8 seconds took 15 to 35 seconds on a desktop graphics card and can take many minutes without one, so run long renders in the background.
+Use `--quality draft` for a half-resolution test. At full quality, shots of 5 to 8 seconds took 36 to 88 seconds on a desktop graphics card. Without one the tools drop to 4 passes per frame, which is much rougher and still far slower, so tell the user and run long renders in the background.
 
 Give the user the path to the MP4, its format and length, and how long it took. Be clear that you checked stills and frame-to-frame changes, and did not watch the video play.
 
@@ -100,5 +102,5 @@ Apply exactly what the user asked for and leave everything else alone, so a note
 ## Limits to be upfront about
 
 - There is no true motion blur, so very fast moves can look stepped. Keep them moderate, or try `--set fps=60`.
-- Lighting is real-time rather than ray traced. Light does not bounce by itself, so interiors need added fill light, and shadows come only from `SunLight`.
+- Lighting is not full ray tracing. Shadows and sky occlusion are soft and accurate, but light does not bounce by itself, so interiors need added fill light.
 - Remotion has its own licence: free for individuals and for companies of up to 3 people, while larger companies need a paid licence from remotion.dev. Mention this if the user seems to be working for a company.
