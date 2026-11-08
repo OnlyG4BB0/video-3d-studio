@@ -12,7 +12,7 @@ controlla il proprio lavoro e renderizza video MP4 sul tuo computer.
 <a href="https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.1.0/film-16x9.mp4"><img src="docs/demo/film.jpg" width="760" alt="Sei fotogrammi del film dimostrativo: un titolo di metallo, un orologio, una sfera di vetro, colonne che formano la scritta 3D, un pianeta di metallo liquido e ingranaggi di ottone"></a>
 
 **[Scarica il film dimostrativo di 90 secondi](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.1.0/film-16x9.mp4)**<br>
-<sub>Otto capitoli realizzati da zero con questa skill. MP4 1080p, 179 MB, senza audio.</sub>
+<sub>Otto capitoli realizzati da zero con questa skill. MP4 1080p con colonna sonora originale, 181 MB.</sub>
 
 <table>
 <tr>

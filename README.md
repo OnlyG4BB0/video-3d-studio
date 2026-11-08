@@ -15,7 +15,7 @@ checks its own work, and renders MP4 clips on your computer.
 <a href="https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.1.0/film-16x9.mp4"><img src="docs/demo/film.jpg" width="760" alt="Six frames from the demo film: a metal title, a watch, a glass sphere, columns forming the word 3D, a liquid metal planet and brass gears"></a>
 
 **[Download the 90-second demo film](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.1.0/film-16x9.mp4)**<br>
-<sub>Eight chapters made from scratch with this skill. 1080p MP4, 179 MB, no sound.</sub>
+<sub>Eight chapters made from scratch with this skill. 1080p MP4 with an original soundtrack, 181 MB.</sub>
 
 <table>
 <tr>
