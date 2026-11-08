@@ -9,6 +9,11 @@ controlla il proprio lavoro e renderizza video MP4 sul tuo computer.
 
 [English](README.md)
 
+<a href="https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.1.0/film-16x9.mp4"><img src="docs/demo/film.jpg" width="760" alt="Sei fotogrammi del film dimostrativo: un titolo di metallo, un orologio, una sfera di vetro, colonne che formano la scritta 3D, un pianeta di metallo liquido e ingranaggi di ottone"></a>
+
+**[Scarica il film dimostrativo di 90 secondi](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.1.0/film-16x9.mp4)**<br>
+<sub>Otto capitoli realizzati da zero con questa skill. MP4 1080p, 179 MB, senza audio.</sub>
+
 <table>
 <tr>
 <td align="center"><img src="docs/demo/product.gif" width="170" alt="Una borraccia verde su un piedistallo con la camera che le gira attorno"><br><sub>Prodotto</sub></td>
@@ -122,7 +127,7 @@ Ogni impostazione si può cambiare con `--set`, ad esempio `--set format=vertica
 
 ## Da sapere
 
-**Provata su** Windows 11 con RTX 3060 e Node.js 23.2, dove video da 5 a 8 secondi hanno richiesto da 36 a 88 secondi alla massima qualità. Dovrebbe funzionare anche su macOS e Linux, ma non è ancora stata provata: le segnalazioni sono benvenute. Senza scheda grafica passa a 4 passaggi per fotogramma, con un risultato più grezzo e tempi molto più lunghi.
+**Provata su** Windows 11 con RTX 3060 e Node.js 23.2, dove video da 5 a 8 secondi hanno richiesto da 36 a 88 secondi alla massima qualità e il film dimostrativo di 90 secondi da 16 a 23 minuti. Dovrebbe funzionare anche su macOS e Linux, ma non è ancora stata provata: le segnalazioni sono benvenute. Senza scheda grafica passa a 4 passaggi per fotogramma, con un risultato più grezzo e tempi molto più lunghi.
 
 **Spazio su disco.** Ogni progetto occupa circa 1 GB e il primo render di ogni progetto scarica un browser da 130 MB.
 

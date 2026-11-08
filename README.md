@@ -12,6 +12,11 @@ checks its own work, and renders MP4 clips on your computer.
 
 [Italiano](README.it.md)
 
+<a href="https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.1.0/film-16x9.mp4"><img src="docs/demo/film.jpg" width="760" alt="Six frames from the demo film: a metal title, a watch, a glass sphere, columns forming the word 3D, a liquid metal planet and brass gears"></a>
+
+**[Download the 90-second demo film](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.1.0/film-16x9.mp4)**<br>
+<sub>Eight chapters made from scratch with this skill. 1080p MP4, 179 MB, no sound.</sub>
+
 <table>
 <tr>
 <td align="center"><img src="docs/demo/product.gif" width="170" alt="A green flask on a stone plinth with the camera orbiting around it"><br><sub>Product orbit</sub></td>
@@ -154,7 +159,7 @@ Any setting can be changed with `--set`, for example `--set format=vertical --se
 
 ## Good to know
 
-**Tested on** Windows 11 with an RTX 3060 and Node.js 23.2, where clips of 5 to 8 seconds rendered in 36 to 88 seconds at full quality. macOS and Linux should work but have not been tested yet, so reports are welcome. Without a graphics card it falls back to 4 passes per frame, which looks rougher and takes much longer.
+**Tested on** Windows 11 with an RTX 3060 and Node.js 23.2, where clips of 5 to 8 seconds rendered in 36 to 88 seconds at full quality and the 90-second demo film took 16 to 23 minutes. macOS and Linux should work but have not been tested yet, so reports are welcome. Without a graphics card it falls back to 4 passes per frame, which looks rougher and takes much longer.
 
 **Disk space.** Each project takes about 1 GB, and the first render in each project downloads a 130 MB headless browser.
 
