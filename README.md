@@ -17,6 +17,11 @@ checks its own work, and renders MP4 clips on your computer.
 **[Download the 90-second demo film](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.2.0/film-16x9.mp4)**<br>
 <sub>Eight chapters made from scratch with this skill. 1080p MP4 with an original soundtrack, 181 MB.</sub>
 
+<a href="https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.2.0/night-shift-16x9.mp4"><img src="docs/demo/night-shift.jpg" width="760" alt="Six frames from a single take at night: code being typed on a monitor, a backlit keyboard, the whole desk, rain on the window, books under a lamp and the inside of a computer"></a>
+
+**[Download Night Shift, a 90-second single take](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.2.0/night-shift-16x9.mp4)**<br>
+<sub>One camera move through a room at night, with no cuts, made from scratch with this skill. 1080p MP4 with original sound, 294 MB.</sub>
+
 <table>
 <tr>
 <td align="center"><img src="docs/demo/product.gif" width="170" alt="A green flask on a stone plinth with the camera orbiting around it"><br><sub>Product orbit</sub></td>

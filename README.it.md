@@ -14,6 +14,11 @@ controlla il proprio lavoro e renderizza video MP4 sul tuo computer.
 **[Scarica il film dimostrativo di 90 secondi](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.2.0/film-16x9.mp4)**<br>
 <sub>Otto capitoli realizzati da zero con questa skill. MP4 1080p con colonna sonora originale, 181 MB.</sub>
 
+<a href="https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.2.0/night-shift-16x9.mp4"><img src="docs/demo/night-shift.jpg" width="760" alt="Sei fotogrammi di una ripresa unica di notte: codice digitato su un monitor, una tastiera retroilluminata, tutta la scrivania, la pioggia sulla finestra, libri sotto una lampada e l'interno di un computer"></a>
+
+**[Scarica Night Shift, una ripresa unica di 90 secondi](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.2.0/night-shift-16x9.mp4)**<br>
+<sub>Un solo movimento di camera in una stanza di notte, senza stacchi, realizzato da zero con questa skill. MP4 1080p con suono originale, 294 MB.</sub>
+
 <table>
 <tr>
 <td align="center"><img src="docs/demo/product.gif" width="170" alt="Una borraccia verde su un piedistallo con la camera che le gira attorno"><br><sub>Prodotto</sub></td>
