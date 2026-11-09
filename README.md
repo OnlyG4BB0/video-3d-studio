@@ -12,9 +12,9 @@ checks its own work, and renders MP4 clips on your computer.
 
 [Italiano](README.it.md)
 
-<a href="https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.1.0/film-16x9.mp4"><img src="docs/demo/film.jpg" width="760" alt="Six frames from the demo film: a metal title, a watch, a glass sphere, columns forming the word 3D, a liquid metal planet and brass gears"></a>
+<a href="https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.2.0/film-16x9.mp4"><img src="docs/demo/film.jpg" width="760" alt="Six frames from the demo film: a metal title, a watch, a glass sphere, columns forming the word 3D, a liquid metal planet and brass gears"></a>
 
-**[Download the 90-second demo film](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.1.0/film-16x9.mp4)**<br>
+**[Download the 90-second demo film](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.2.0/film-16x9.mp4)**<br>
 <sub>Eight chapters made from scratch with this skill. 1080p MP4 with an original soundtrack, 181 MB.</sub>
 
 <table>
@@ -48,6 +48,8 @@ checks its own work, and renders MP4 clips on your computer.
 - **Rooms and atmospheres.** Sunlight through a window, moving leaf shadows, shafts of light in the air.
 - **Abstract shader pieces.** Liquid metal, iridescent surfaces, drifting colour backdrops.
 - **Custom scenes.** Ask for something new and Claude models it from the kit's building blocks.
+- **Films with chapters.** Join any scenes into a longer film with dissolves. A complete 90-second example is included.
+- **Original music.** A soundtrack synthesised from scratch, with no samples, timed to what happens on screen.
 - **Every social format.** 9:16, 16:9 and 1:1 from the same scene, with framing that adapts.
 - **Notes in plain language.** "Warmer light" or "slower camera" changes that one thing.
 
@@ -115,6 +117,10 @@ Use my product.glb for an 8-second square video with the camera circling it.
 A bright room in the morning with leaf shadows on the floor, 16:9, 8 seconds.
 ```
 
+```text
+A 40-second film about my coffee brand in four chapters, with music: title, the cup, the roastery, logo.
+```
+
 If the skill does not start on its own, add "use the video-3d-studio skill" to your request.
 
 ## How it works
@@ -143,6 +149,8 @@ Each shot is a [Remotion](https://www.remotion.dev) composition built with [thre
 | Files | SVG extrusion, TTF/OTF letters, GLB models |
 | Motion | Springs, easing, staggering, repeatable noise for renders that come out the same every time |
 | Finish | Tone mapping, bloom, lens blur, contrast and colour grade, colour fringing, vignette, film grain |
+| Films | Chapters with dissolves, each scene reusable as a chapter, captions that adapt to the format |
+| Music | Eight moods, sounds placed at exact moments, levels mixed for social and streaming apps |
 
 Claude reads the [workflow](SKILL.md), the [toolkit reference](references/toolkit.md) and the [notes on lens, light and timing](references/craft.md) as it needs them.
 
@@ -153,6 +161,9 @@ Claude reads the [workflow](SKILL.md), the [toolkit reference](references/toolki
 | `node tools/stills.mjs Shot --count 5` | Review images |
 | `node tools/check-motion.mjs Shot` | Scan every frame for flashes and jumps |
 | `node tools/render.mjs Shot --out out/name.mp4` | Final MP4 |
+| `node tools/render.mjs Film --music` | The film, with its original music |
+| `node tools/music.mjs Shot --mood warm` | Only the music, as a WAV |
+| `node tools/stills.mjs Film --dissolves` | The middle of every dissolve |
 | `npm run studio` | Live preview in the browser |
 
 Any setting can be changed with `--set`, for example `--set format=vertical --set "text=HELLO"`.
@@ -162,6 +173,8 @@ Any setting can be changed with `--set`, for example `--set format=vertical --se
 **Tested on** Windows 11 with an RTX 3060 and Node.js 23.2, where clips of 5 to 8 seconds rendered in 36 to 88 seconds at full quality and the 90-second demo film took 16 to 23 minutes. macOS and Linux should work but have not been tested yet, so reports are welcome. Without a graphics card it falls back to 4 passes per frame, which looks rougher and takes much longer.
 
 **Disk space.** Each project takes about 1 GB, and the first render in each project downloads a 130 MB headless browser.
+
+**Music.** The soundtrack follows simple rules and is checked by measuring its levels, because Claude cannot hear it. Treat it as a background track and listen before you publish.
 
 **Current limits**
 

@@ -19,7 +19,7 @@ import {ShaderPass} from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import {UnrealBloomPass} from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import {AccumulatePass, BeamOptions, FocusOptions} from './accumulate';
 import {SampleBus, SampleContext} from './samples';
-import './shaderPatches';
+import {setEnvironmentDiffuse} from './shaderPatches';
 
 const TONES = {
 	aces: ACESFilmicToneMapping,
@@ -195,6 +195,7 @@ const Finish: React.FC<FinishOptions & {samples: number}> = ({
 	});
 
 	useFrame(() => {
+		setEnvironmentDiffuse(scene.userData.environmentDiffuse ?? 1);
 		pipeline.composer.render();
 	}, 1);
 

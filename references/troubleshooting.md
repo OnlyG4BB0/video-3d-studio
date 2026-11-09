@@ -23,6 +23,9 @@
 | Thin bright line in the corner of a room | Light leaking where two walls meet | Add `shadowSide={FrontSide}` to the wall material |
 | Subject too small in 9:16 | Fit limited by something wide | Use a smaller radius in `fitDistance` when `aspect < 1` |
 | Letters reflected too strongly | Bright copy under a thin floor | Raise the floor's `opacity` |
+| A face or dial looks like a blank mirror | A lathe outline closes over it, because the outline must end on the axis | End the outline below the face, then place the face above it |
+| Wood or a texture shows rays from the centre | Lathe UVs run around the shape | Lay a flat circle with its own map on top |
+| Clip looks square after uploading to Instagram | The website crops video to 1:1 by default | Open the crop menu in the upload window and choose 9:16 |
 
 ## What the motion looks like
 
@@ -32,6 +35,9 @@
 | Flicker or jumps between frames | Something depends on state or randomness | Compute it from `useShot()`, `wobble` or `scatter` |
 | Everything looks frozen | Value not derived from the frame | Use `time`, `progress` or `frame` |
 | Fast moves look stepped | No motion blur | Slow the move or use `--set fps=60` |
+| `check-motion` reports a long stretch in spinning parts | A wheel turns too far each frame and strobes | Keep the fastest part under about 10 degrees per frame |
+| A sound arrives before or after its moment | The cue time was typed by hand, or the chapter's length changed | Compute `at` from the animation's constants, or use `progress` |
+| One chapter of music is much louder or quieter | Moods differ in energy | Compare the levels that the music tool prints, then change the mood or a cue's `amp` |
 
 `check-motion` measures how much the brightness of each frame differs from the one before, on a scale of 0 to 255, and flags 15 or more. Ordinary movement in the example scenes stayed below 9.
 
@@ -40,6 +46,10 @@
 | Message | Fix |
 |---|---|
 | `No shot called "X"` | The message lists valid names. Check `src/Root.tsx` |
+| `No scene called "X"` in a film | Use a name from `src/scenes/registry.ts`. The message lists them |
+| `Chapter "X" lasts ... no longer than its dissolve` | Lengthen the chapter or shorten `dissolve` |
+| `Unknown mood "X"` or `Unknown cue sound "X"` | The message lists the valid names |
+| `Could not add the music to the video` | The WAV is in `out/music/` and the picture in `out/*.no-sound.mp4`. Check the disk space, then run the render again |
 | `The font has no "X" character` | Pick a font that includes it. The default font covers Western European accented letters |
 | `public/X was not found` | Put the file in `public/` and pass the name relative to that folder |
 | `The SVG has no filled shapes` | Convert strokes to outlines in the design tool |

@@ -2,6 +2,7 @@
 //
 //   node tools/stills.mjs ProductOrbit --set format=wide --count 5
 //   node tools/stills.mjs ProductOrbit --frames 0,30,179 --scale 1
+//   node tools/stills.mjs Film --dissolves
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -39,11 +40,23 @@ const main = async () => {
 			renderSamples: samplesFor({gl, flags, fallback: 24}),
 		};
 		const last = context.composition.durationInFrames - 1;
-		const frames = flags.frames
-			? flags.frames.split(',').map(Number)
-			: Array.from({length: count}, (_, i) =>
-					count === 1 ? 0 : Math.round((i * last) / (count - 1)),
-				);
+		const timeline = context.composition.props.timeline;
+		if (flags.dissolves && !timeline) {
+			throw new Error('--dissolves only applies to a film.');
+		}
+		// The middle of each dissolve, where both chapters are on screen.
+		const dissolves = (timeline ?? [])
+			.slice(1)
+			.map((slot, i) =>
+				Math.round((slot.from + timeline[i].from + timeline[i].frames) / 2),
+			);
+		const frames = flags.dissolves
+			? dissolves
+			: flags.frames
+				? flags.frames.split(',').map(Number)
+				: Array.from({length: count}, (_, i) =>
+						count === 1 ? 0 : Math.round((i * last) / (count - 1)),
+					);
 
 		for (const frame of frames) {
 			if (!Number.isInteger(frame) || frame < 0 || frame > last) {

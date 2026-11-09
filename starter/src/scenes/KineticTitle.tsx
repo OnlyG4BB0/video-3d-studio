@@ -1,20 +1,18 @@
-import React, {useMemo, useRef} from 'react';
+import React, {useMemo} from 'react';
 import {AbsoluteFill} from 'remotion';
-import {Group} from 'three';
 import {
 	AuroraBackdrop,
 	EnvLight,
 	fitWidth,
+	GlossyReflection,
 	landing,
 	lensFov,
 	Letter,
 	LOOKS,
 	PathCamera,
-	pointOnDisc,
 	ShotProps,
 	Stage,
 	SunLight,
-	useEachSample,
 	useFontFile,
 	useRadialFade,
 	useScratchMap,
@@ -78,29 +76,6 @@ const Letters: React.FC<{
 			})}
 		</>
 	);
-};
-
-/**
- * A mirrored copy that wobbles a little more the higher each point is. Averaged
- * over the samples, the reflection is sharp at the floor and melts away above it.
- */
-const GlossyReflection: React.FC<{
-	gloss: number;
-	children: React.ReactNode;
-}> = ({gloss, children}) => {
-	const group = useRef<Group>(null);
-	useEachSample(({pair}) => {
-		const current = group.current;
-		if (!current) {
-			return;
-		}
-		const [u, v] = pair(41);
-		const [x, z] = pointOnDisc(u, v);
-		current.matrixAutoUpdate = false;
-		current.matrix.set(1, -x * gloss, 0, 0, 0, -1, 0, 0, 0, -z * gloss, 1, 0, 0, 0, 0, 1);
-		current.matrixWorldNeedsUpdate = true;
-	});
-	return <group ref={group}>{children}</group>;
 };
 
 export const KineticTitle: React.FC<KineticTitleProps> = ({

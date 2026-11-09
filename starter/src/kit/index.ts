@@ -1,6 +1,7 @@
 export * from './accumulate';
 export * from './assets';
 export * from './camera';
+export * from './film';
 export * from './geometry';
 export * from './light';
 export * from './materials';

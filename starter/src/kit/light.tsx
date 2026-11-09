@@ -19,7 +19,6 @@ import {
 } from 'three';
 import type {Vec3} from './camera';
 import {pointOnDisc, useEachSample, useSampleBus} from './samples';
-import {setEnvironmentDiffuse} from './shaderPatches';
 
 type Panel = {at: Vec3; size: [number, number]; color: string; power: number};
 
@@ -187,9 +186,6 @@ export const EnvLight: React.FC<EnvLightProps> = ({
 	const gl = useThree((state) => state.gl);
 	const scene = useThree((state) => state.scene);
 
-	// Materials read this when they are first compiled, after this render.
-	useMemo(() => setEnvironmentDiffuse(diffuse), [diffuse]);
-
 	const target = useMemo(() => {
 		const generator = new PMREMGenerator(gl);
 		const source = buildEnvironmentScene(RECIPES[preset]);
@@ -204,6 +200,8 @@ export const EnvLight: React.FC<EnvLightProps> = ({
 	useLayoutEffect(() => {
 		scene.environment = target.texture;
 		scene.environmentIntensity = intensity;
+		// Stage applies this just before it draws. See shaderPatches.ts.
+		scene.userData.environmentDiffuse = diffuse;
 		scene.environmentRotation.set(0, MathUtils.degToRad(rotate), 0);
 	});
 

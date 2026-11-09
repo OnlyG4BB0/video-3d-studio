@@ -2,11 +2,14 @@
 //
 //   node tools/render.mjs ProductOrbit --set format=vertical --out out/bottle.mp4
 //   node tools/render.mjs ProductOrbit --quality draft
+//   node tools/render.mjs Film --music
+//   node tools/render.mjs ProductOrbit --music warm
 
 import fs from 'node:fs';
 import path from 'node:path';
 import {renderMedia} from '@remotion/renderer';
 import {
+	addSoundtrack,
 	defaultConcurrency,
 	fail,
 	parseArguments,
@@ -16,6 +19,7 @@ import {
 	TIMEOUT_MS,
 	withRenderer,
 } from './lib.mjs';
+import {makeSoundtrack} from './sound.mjs';
 
 const QUALITY = {
 	draft: {scale: 0.5, crf: 26, imageFormat: 'jpeg', jpegQuality: 85},
@@ -43,8 +47,20 @@ const main = async () => {
 	const startedAt = Date.now();
 	let lastPercent = -10;
 
-	await withRenderer({id, inputProps, flags}, (context, gl) =>
-		renderMedia({
+	const wantsMusic = flags.music !== undefined;
+	const name = path.parse(outputLocation).name;
+	const wavLocation = path.resolve(PROJECT_ROOT, 'out', 'music', `${name}.wav`);
+	const pictureLocation = wantsMusic
+		? path.join(path.dirname(outputLocation), `${name}.no-sound.mp4`)
+		: outputLocation;
+
+	await withRenderer({id, inputProps, flags}, async (context, gl) => {
+		// The music takes seconds and the picture can take minutes, so a mistake
+		// in the score should stop things before the long part begins.
+		if (wantsMusic) {
+			makeSoundtrack({composition: context.composition, flags, output: wavLocation});
+		}
+		await renderMedia({
 			...context,
 			...quality,
 			codec: 'h264',
@@ -58,7 +74,7 @@ const main = async () => {
 					fallback: SAMPLES[flags.quality ?? 'final'],
 				}),
 			},
-			outputLocation,
+			outputLocation: pictureLocation,
 			concurrency,
 			overwrite: true,
 			logLevel: 'error',
@@ -70,8 +86,13 @@ const main = async () => {
 					console.log(`${percent}%`);
 				}
 			},
-		}),
-	);
+		});
+	});
+
+	if (wantsMusic) {
+		addSoundtrack(pictureLocation, wavLocation, outputLocation);
+		fs.rmSync(pictureLocation);
+	}
 
 	const seconds = Math.round((Date.now() - startedAt) / 1000);
 	const size = (fs.statSync(outputLocation).size / 1_000_000).toFixed(1);

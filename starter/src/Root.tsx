@@ -1,45 +1,27 @@
 import React from 'react';
 import {Composition} from 'remotion';
-import {fitShot} from './kit';
-import {KineticTitle, kineticTitleDefaults} from './scenes/KineticTitle';
-import {LiquidForm, liquidFormDefaults} from './scenes/LiquidForm';
-import {LogoReveal, logoRevealDefaults} from './scenes/LogoReveal';
-import {MorningRoom, morningRoomDefaults} from './scenes/MorningRoom';
-import {ProductOrbit, productOrbitDefaults} from './scenes/ProductOrbit';
+import {fitFilm, fitShot, ShotProps} from './kit';
+import {Film, filmDefaults} from './scenes/Film';
+import {SCENES} from './scenes/registry';
 
 // Every shot gets its size and length from its props, so one composition serves
-// all three formats. Register new scenes here.
+// all three formats. New scenes go in scenes/registry.ts and appear here by themselves.
 export const Root: React.FC = () => (
 	<>
 		<Composition
-			id="ProductOrbit"
-			component={ProductOrbit}
-			defaultProps={productOrbitDefaults}
-			calculateMetadata={fitShot}
+			id="Film"
+			component={Film}
+			defaultProps={filmDefaults}
+			calculateMetadata={fitFilm}
 		/>
-		<Composition
-			id="KineticTitle"
-			component={KineticTitle}
-			defaultProps={kineticTitleDefaults}
-			calculateMetadata={fitShot}
-		/>
-		<Composition
-			id="LogoReveal"
-			component={LogoReveal}
-			defaultProps={logoRevealDefaults}
-			calculateMetadata={fitShot}
-		/>
-		<Composition
-			id="LiquidForm"
-			component={LiquidForm}
-			defaultProps={liquidFormDefaults}
-			calculateMetadata={fitShot}
-		/>
-		<Composition
-			id="MorningRoom"
-			component={MorningRoom}
-			defaultProps={morningRoomDefaults}
-			calculateMetadata={fitShot}
-		/>
+		{Object.entries(SCENES).map(([id, {component, defaults}]) => (
+			<Composition
+				key={id}
+				id={id}
+				component={component as React.FC<ShotProps>}
+				defaultProps={defaults as ShotProps}
+				calculateMetadata={fitShot}
+			/>
+		))}
 	</>
 );

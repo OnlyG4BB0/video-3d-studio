@@ -10,8 +10,18 @@ const originalLightMaps = ShaderChunk.lights_fragment_maps;
  * Scales how much the environment lights matte surfaces, without changing what
  * shiny surfaces reflect. Environment light cannot be blocked by objects, so
  * keeping it low lets SkyLight provide fill that does cast soft shadows.
+ *
+ * Materials read this when they are compiled, which happens while a frame is
+ * drawn, so Stage applies its own value just before drawing. That keeps two
+ * scenes with different values correct while one dissolves into the other.
  */
+let appliedDiffuse: number | null = null;
+
 export const setEnvironmentDiffuse = (scale: number) => {
+	if (scale === appliedDiffuse) {
+		return;
+	}
+	appliedDiffuse = scale;
 	if (!originalLightMaps.includes(IBL_DIFFUSE)) {
 		throw new Error('This version of three is not supported by the kit.');
 	}

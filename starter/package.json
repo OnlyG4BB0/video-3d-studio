@@ -7,6 +7,7 @@
     "stills": "node tools/stills.mjs",
     "motion": "node tools/check-motion.mjs",
     "render": "node tools/render.mjs",
+    "music": "node tools/music.mjs",
     "check": "tsc --noEmit"
   },
   "dependencies": {

@@ -1,3 +1,4 @@
+import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -28,6 +29,9 @@ const coerce = (value) => {
 	return value.replaceAll('\\n', '\n');
 };
 
+// These can be given on their own, with no value after them.
+const VALUE_IS_OPTIONAL = new Set(['music', 'dissolves']);
+
 /** Parses `Name --flag value --set key=value`. Works the same in every shell. */
 export const parseArguments = (argv) => {
 	const positional = [];
@@ -40,6 +44,11 @@ export const parseArguments = (argv) => {
 			continue;
 		}
 		const [key, inline] = splitOnce(argument.slice(2), '=');
+		const nextIsFlag = i + 1 >= argv.length || argv[i + 1].startsWith('--');
+		if (inline === undefined && VALUE_IS_OPTIONAL.has(key) && nextIsFlag) {
+			flags[key] = true;
+			continue;
+		}
 		const value = inline ?? argv[++i];
 		if (value === undefined) {
 			throw new Error(`--${key} needs a value`);
@@ -55,6 +64,42 @@ export const parseArguments = (argv) => {
 		}
 	}
 	return {positional, flags, sets};
+};
+
+/** Puts a WAV under a video without re-encoding the picture, using Remotion's ffmpeg. */
+export const addSoundtrack = (video, wav, output) => {
+	const result = spawnSync(
+		process.execPath,
+		[
+			path.join(PROJECT_ROOT, 'node_modules', '@remotion', 'cli', 'remotion-cli.js'),
+			'ffmpeg',
+			'-v',
+			'error',
+			'-y',
+			'-i',
+			video,
+			'-i',
+			wav,
+			'-map',
+			'0:v:0',
+			'-map',
+			'1:a:0',
+			'-c:v',
+			'copy',
+			'-c:a',
+			'aac',
+			'-b:a',
+			'192k',
+			'-shortest',
+			'-movflags',
+			'+faststart',
+			output,
+		],
+		{cwd: PROJECT_ROOT, encoding: 'utf8'},
+	);
+	if (result.status !== 0) {
+		throw new Error(`Could not add the music to the video.\n${result.stderr}`);
+	}
 };
 
 export const readProps = (flags, sets) => {

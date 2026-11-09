@@ -85,6 +85,22 @@ Springs bring things to life: `bouncy` suits playful pieces, `firm` suits most t
 
 For a seamless loop, drive everything from `loop` with whole cycles of sine, and use a full 360-degree orbit with `EASE.steady`.
 
+Things moving fast across the frame look stepped, because there is no motion blur. A large object should take at least half a second to cross the picture, and several falling or rising things should be staggered so that only one or two are at full speed at once.
+
+Rotation adds up in anything geared. A gear train multiplies speed at every step, so the last wheel can spin dozens of times faster than the first, and past about 10 degrees per frame it strobes. Start from the fastest wheel and work backwards.
+
+## Films
+
+Give each chapter one idea and let it finish before the dissolve begins, since the last 0.8 seconds are already fading. Change something between neighbouring chapters, such as the colour, the scale or the speed, so that the join reads as a new thought.
+
+Start the film's first chapter with something that moves within two seconds, and hold the end card long enough to read twice.
+
+Make every caption true of what is on screen. If it promises light beams, there must be visible beams in the stills. Fix the picture or change the words.
+
+Time sounds from the same numbers as the animation. A constant shared by the two stays in step when either changes, and a time typed by hand does not.
+
+A vertical clip is not a cropped wide shot. Pull the camera back and raise it so that the subject sits between the top 14% and the caption, and re-check the first frame, the last frame and the middle of the move.
+
 ## Finish
 
 Keep it subtle. If someone can name the effect, it is probably too strong.

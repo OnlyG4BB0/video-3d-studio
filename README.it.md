@@ -9,9 +9,9 @@ controlla il proprio lavoro e renderizza video MP4 sul tuo computer.
 
 [English](README.md)
 
-<a href="https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.1.0/film-16x9.mp4"><img src="docs/demo/film.jpg" width="760" alt="Sei fotogrammi del film dimostrativo: un titolo di metallo, un orologio, una sfera di vetro, colonne che formano la scritta 3D, un pianeta di metallo liquido e ingranaggi di ottone"></a>
+<a href="https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.2.0/film-16x9.mp4"><img src="docs/demo/film.jpg" width="760" alt="Sei fotogrammi del film dimostrativo: un titolo di metallo, un orologio, una sfera di vetro, colonne che formano la scritta 3D, un pianeta di metallo liquido e ingranaggi di ottone"></a>
 
-**[Scarica il film dimostrativo di 90 secondi](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.1.0/film-16x9.mp4)**<br>
+**[Scarica il film dimostrativo di 90 secondi](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.2.0/film-16x9.mp4)**<br>
 <sub>Otto capitoli realizzati da zero con questa skill. MP4 1080p con colonna sonora originale, 181 MB.</sub>
 
 <table>
@@ -45,6 +45,8 @@ controlla il proprio lavoro e renderizza video MP4 sul tuo computer.
 - **Stanze e atmosfere.** Sole che entra dalla finestra, ombre di foglie in movimento, raggi di luce nell'aria.
 - **Pezzi astratti con shader.** Metallo liquido, superfici iridescenti, sfondi di colore in movimento.
 - **Scene su misura.** Chiedi qualcosa di nuovo e Claude lo modella con i pezzi del kit.
+- **Film a capitoli.** Unisci qualsiasi scena in un film più lungo con le dissolvenze. Include un esempio completo di 90 secondi.
+- **Musica originale.** Una colonna sonora sintetizzata da zero, senza campioni, sincronizzata con quello che succede sullo schermo.
 - **Tutti i formati social.** 9:16, 16:9 e 1:1 dalla stessa scena, con un'inquadratura che si adatta.
 - **Modifiche a parole.** "Luce più calda" o "camera più lenta" cambiano solo quello.
 
@@ -112,6 +114,10 @@ Usa il mio modello prodotto.glb per un video quadrato di 8 secondi con la camera
 Una stanza luminosa al mattino con ombre di foglie sul pavimento, 16:9, 8 secondi.
 ```
 
+```text
+Un film di 40 secondi sul mio marchio di caffè in quattro capitoli, con musica: titolo, la tazzina, la torrefazione, logo.
+```
+
 Se la skill non parte da sola, aggiungi "usa la skill video-3d-studio" alla richiesta.
 
 ## Comandi dentro un progetto
@@ -121,6 +127,9 @@ Se la skill non parte da sola, aggiungi "usa la skill video-3d-studio" alla rich
 | `node tools/stills.mjs Shot --count 5` | Fotogrammi di controllo |
 | `node tools/check-motion.mjs Shot` | Analisi di tutti i fotogrammi per lampi e salti |
 | `node tools/render.mjs Shot --out out/nome.mp4` | MP4 finale |
+| `node tools/render.mjs Film --music` | Il film, con la sua musica originale |
+| `node tools/music.mjs Shot --mood warm` | Solo la musica, in WAV |
+| `node tools/stills.mjs Film --dissolves` | Il centro di ogni dissolvenza |
 | `npm run studio` | Anteprima dal vivo nel browser |
 
 Ogni impostazione si può cambiare con `--set`, ad esempio `--set format=vertical --set "text=CIAO"`.
@@ -130,6 +139,8 @@ Ogni impostazione si può cambiare con `--set`, ad esempio `--set format=vertica
 **Provata su** Windows 11 con RTX 3060 e Node.js 23.2, dove video da 5 a 8 secondi hanno richiesto da 36 a 88 secondi alla massima qualità e il film dimostrativo di 90 secondi da 16 a 23 minuti. Dovrebbe funzionare anche su macOS e Linux, ma non è ancora stata provata: le segnalazioni sono benvenute. Senza scheda grafica passa a 4 passaggi per fotogramma, con un risultato più grezzo e tempi molto più lunghi.
 
 **Spazio su disco.** Ogni progetto occupa circa 1 GB e il primo render di ogni progetto scarica un browser da 130 MB.
+
+**Musica.** La colonna sonora segue regole semplici e viene controllata misurandone i livelli, perché Claude non può ascoltarla. Considerala un sottofondo e ascoltala prima di pubblicare.
 
 **Limiti attuali**
 

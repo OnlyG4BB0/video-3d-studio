@@ -1,7 +1,32 @@
-import React, {useMemo} from 'react';
-import {BufferGeometry, LatheGeometry, Vector2, Vector3} from 'three';
+import React, {useMemo, useRef} from 'react';
+import {BufferGeometry, Group, LatheGeometry, Vector2, Vector3} from 'three';
 import {RoundedBoxGeometry} from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import {toCreasedNormals} from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import {pointOnDisc, useEachSample} from './samples';
+
+/**
+ * A mirrored copy that wobbles a little more the higher each point is. Averaged
+ * over the samples, the reflection is sharp at the floor and melts away above it.
+ * Put a second copy of the objects inside it, and a part-transparent floor over it.
+ */
+export const GlossyReflection: React.FC<{
+	gloss: number;
+	children: React.ReactNode;
+}> = ({gloss, children}) => {
+	const group = useRef<Group>(null);
+	useEachSample(({pair}) => {
+		const current = group.current;
+		if (!current) {
+			return;
+		}
+		const [u, v] = pair(41);
+		const [x, z] = pointOnDisc(u, v);
+		current.matrixAutoUpdate = false;
+		current.matrix.set(1, -x * gloss, 0, 0, 0, -1, 0, 0, 0, -z * gloss, 1, 0, 0, 0, 0, 1);
+		current.matrixWorldNeedsUpdate = true;
+	});
+	return <group ref={group}>{children}</group>;
+};
 
 /** [radius, height] or [radius, height, cornerRounding]. */
 export type ProfilePoint = [number, number] | [number, number, number];

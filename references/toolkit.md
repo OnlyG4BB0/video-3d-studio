@@ -14,6 +14,8 @@ Everything here is imported from `../kit` inside a scene. Lengths are in scene u
 - Geometry
 - Text, logos and models
 - Motion
+- Films and captions
+- Music
 
 ## Command line
 
@@ -27,7 +29,13 @@ Run from the project folder. `--set name=value` overrides any prop of the shot a
 | `node tools/render.mjs Shot --out out/name.mp4` | Final MP4 |
 | `node tools/render.mjs Shot --quality draft` | Half-size test render |
 | `npm run check` | Type-check the code |
+| `node tools/render.mjs Shot --music` | Final MP4 with original music. A film uses each chapter's mood |
+| `node tools/render.mjs Shot --music warm` | The same with one mood for the whole shot |
+| `node tools/music.mjs Shot --mood warm` | Only the music, as a WAV in `out/music/`, with its levels |
+| `node tools/stills.mjs Film --dissolves` | The middle of every dissolve in a film |
 | `npm run studio` | Live preview in the browser, for the user |
+
+`render` with `--music` and `music` also take `--seed 2` for other progressions and `--transpose 3` to move the key in semitones.
 
 All three tools take `--props-file shot.json`, `--gl angle` or `--gl swangle`, and `--samples 32` to set the passes per frame. The defaults are 24 for stills, 4 for the motion check, 12 for a draft and 64 for a final render. `render` and `check-motion` also take `--concurrency 2`.
 
@@ -35,7 +43,7 @@ Common props: `format` (`vertical`, `wide`, `square`), `seconds`, `fps`.
 
 ## Shot basics
 
-Scene props extend `ShotProps`. Register each scene in `Root.tsx` with `calculateMetadata={fitShot}` and default props.
+Scene props extend `ShotProps`. Add each scene to `src/scenes/registry.ts` with its default props. That makes it a shot of its own and lets a film use it as a chapter.
 
 `useShot()` returns `frame`, `fps`, `width`, `height`, `aspect`, `durationInFrames`, `time` (seconds), `duration` (seconds), `progress` (0 on the first frame, 1 on the last) and `loop` (like progress but never reaches 1, for seamless cycles such as `Math.sin(loop * Math.PI * 2)`).
 
@@ -134,7 +142,7 @@ For a custom look, patch a material with `onBeforeCompile` as `shaders.tsx` does
 
 `useLathe(points, {segments, steps})` spins an outline into a solid. Give points as `[radius, height]` or `[radius, height, cornerRounding]`, from the bottom up, starting and ending at radius 0.
 
-`useRoundedBox(width, height, depth, radius)` returns a box with soft edges. `<Cyclorama color radius height curve />` is a seamless studio backdrop that allows a full orbit. `softenBevels(geometry)` smooths bevels on extruded shapes so highlights roll around the edge. Text and SVG logos already use it.
+`useRoundedBox(width, height, depth, radius)` returns a box with soft edges. `<Cyclorama color radius height curve />` is a seamless studio backdrop that allows a full orbit. `softenBevels(geometry)` smooths bevels on extruded shapes so highlights roll around the edge. Text and SVG logos already use it. `<GlossyReflection gloss={0.08}>` holds a second copy of the objects, mirrored under a part-transparent floor, for a reflection that is crisp at contact and melts above it.
 
 ## Text, logos and models
 
@@ -163,3 +171,53 @@ const model = useModelFile('product.glb', 2.6); // null while loading; stands on
 - `EASE` has `glide`, `arrive`, `depart` and `steady`.
 - `wobble(seed, time, speed)` is smooth repeatable noise, about -1 to 1.
 - `scatter(seed, index)` is a repeatable random number from 0 to 1, for placing things.
+
+## Films and captions
+
+The `Film` shot plays a list of chapters. Its props can come from a JSON file with `--props-file`.
+
+| Film prop | Meaning | Default |
+|---|---|---|
+| `format` | `wide`, `vertical` or `square` | |
+| `chapters` | The list below | |
+| `dissolve` | Seconds each chapter takes to dissolve into the next. 0 is a hard cut | 0.8 |
+| `fadeIn`, `fadeOut` | Seconds from and to black at the two ends | 0.8, 1.2 |
+
+| Chapter field | Meaning |
+|---|---|
+| `scene` | Its name in `src/scenes/registry.ts` |
+| `seconds` | Its length, including the dissolve into the next chapter |
+| `props` | Settings on top of the scene's defaults |
+| `music` | `{mood, cues, hit}`, see Music |
+
+The film is shorter than the sum of its chapters, by one dissolve at each join. To build a different film in code, render `<Chapters {...props} scenes={SCENES} />` in a new component and register it in `Root.tsx` with `calculateMetadata={fitFilm}`.
+
+`<Caption index="01" title="LIGHT" note="One line of explanation" footer="Shown only in 9:16" />` goes next to `<Stage>`, inside the scene's `AbsoluteFill`. It fades in and out with the shot, adds a soft shade behind the words and keeps clear of phone app buttons in 9:16. `useDisplayFont()`, `DISPLAY_FONT` and `BODY_FONT` are there for other text.
+
+## Music
+
+| Mood | Character | Suits |
+|---|---|---|
+| `drone` | Dark and still, a few bells | Openings, titles, things emerging from black |
+| `warm` | Gentle, soft bell arpeggios | Places, daylight, calm products |
+| `clockwork` | Ticking and plucked notes | Watches, instruments, close-ups of detail |
+| `groove` | Steady beat and bass line | Product ranges, anything that keeps moving |
+| `build` | Tension rising to one big hit | Reveals and transformations |
+| `dreamy` | Wide and weightless, scattered sparkles | Abstract and liquid shots |
+| `drive` | Fast and mechanical | Machines, energy, the run-up to an ending |
+| `resolve` | Settles on a major chord | Logos, end cards, the last chapter |
+
+`build` takes `hit`, the moment of the big hit as a fraction of the chapter, for example `{"mood": "build", "hit": 0.6}`.
+
+A cue is one sound at one moment: `{"sound": "clank", "at": 1.2}` in seconds from the start of the chapter, or `{"sound": "bell", "progress": 0.5}` as a fraction of it. Use `progress` for anything that scales with the chapter's length.
+
+| Sound | Options |
+|---|---|
+| `bell` | `note` as a MIDI number, `amp`, `pan` |
+| `clank` | `pitch` in Hz, `amp`, `pan`. A metal object landing |
+| `impact` | `amp`. A deep hit |
+| `riser` | `length` in seconds, `amp`. Climbs and ends at the cue's time |
+| `tick` | `amp`, `pan` |
+| `kick` | `amp` |
+
+A shot on its own can carry the same `music` object in its default props, as the film's chapters do. The result is mixed to about -14 LUFS, the level most social and streaming apps aim for.
