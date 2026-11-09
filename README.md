@@ -22,6 +22,11 @@ checks its own work, and renders MP4 clips on your computer.
 **[Download Night Shift, a 90-second single take](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.2.0/night-shift-16x9.mp4)**<br>
 <sub>One camera move through a room at night, with no cuts, made from scratch with this skill. 1080p MP4 with original sound, 294 MB.</sub>
 
+<a href="https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.2.0/blue-hour-16x9.mp4"><img src="docs/demo/blue-hour.jpg" width="760" alt="Six frames from a film about a playground at dusk: a low sun behind the swings, a jointed mannequin watching an empty swing, a seesaw moving by itself, a red balloon against a violet sky, street lamps coming on and the balloon rising towards the moon"></a>
+
+**[Download Blue Hour, a 90-second film](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.2.0/blue-hour-16x9.mp4)**<br>
+<sub>Night falls on a playground where only the mannequins stand still, made from scratch with this skill. 1080p MP4 with an original piano soundtrack, 308 MB.</sub>
+
 <table>
 <tr>
 <td align="center"><img src="docs/demo/product.gif" width="170" alt="A green flask on a stone plinth with the camera orbiting around it"><br><sub>Product orbit</sub></td>

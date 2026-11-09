@@ -19,6 +19,11 @@ controlla il proprio lavoro e renderizza video MP4 sul tuo computer.
 **[Scarica Night Shift, una ripresa unica di 90 secondi](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.2.0/night-shift-16x9.mp4)**<br>
 <sub>Un solo movimento di camera in una stanza di notte, senza stacchi, realizzato da zero con questa skill. MP4 1080p con suono originale, 294 MB.</sub>
 
+<a href="https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.2.0/blue-hour-16x9.mp4"><img src="docs/demo/blue-hour.jpg" width="760" alt="Sei fotogrammi di un film su un parco giochi al tramonto: il sole basso dietro le altalene, un manichino snodato che guarda un'altalena vuota, un'altalena a bilico che si muove da sola, un palloncino rosso nel cielo viola, i lampioni che si accendono e il palloncino che sale verso la luna"></a>
+
+**[Scarica L'ora blu, un film di 90 secondi](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.2.0/blue-hour-16x9.mp4)**<br>
+<sub>Cala la notte su un parco giochi dove solo i manichini restano fermi, realizzato da zero con questa skill. MP4 1080p con colonna sonora originale per pianoforte, 308 MB.</sub>
+
 <table>
 <tr>
 <td align="center"><img src="docs/demo/product.gif" width="170" alt="Una borraccia verde su un piedistallo con la camera che le gira attorno"><br><sub>Prodotto</sub></td>
