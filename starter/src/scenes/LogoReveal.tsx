@@ -1,19 +1,22 @@
 import React, {useMemo} from 'react';
 import {AbsoluteFill, interpolate} from 'remotion';
+import {Group} from 'three';
 import {
 	AuroraBackdrop,
 	EASE,
 	EnvLight,
 	fitDistance,
-	landing,
 	lensFov,
 	LOOKS,
 	PathCamera,
 	ShotProps,
 	span,
+	springAt,
 	Stage,
 	SunLight,
+	TextReveal,
 	useExtrudedSvg,
+	useMoving,
 	useScratchMap,
 	useShot,
 	useSvgFile,
@@ -44,6 +47,15 @@ const PLACEHOLDER_MARK = `
 	<path d="M100 76 L124 100 L100 124 L76 100 Z"/>
 </svg>`;
 
+// The logo swings round to face the camera, with motion blur. Like every 3D
+// hook, useMoving only works inside <Stage>, so it lives in its own component.
+const Turning: React.FC<{children: React.ReactNode}> = ({children}) => {
+	const group = useMoving<Group>((object, time) => {
+		object.rotation.y = (springAt(time - 0.15, 'soft') - 1) * 1.35;
+	});
+	return <group ref={group}>{children}</group>;
+};
+
 export const LogoReveal: React.FC<LogoRevealProps> = ({
 	logoFile,
 	tagline,
@@ -51,7 +63,7 @@ export const LogoReveal: React.FC<LogoRevealProps> = ({
 	glow,
 	backdrop,
 }) => {
-	const {frame, fps, time, duration, aspect, width} = useShot();
+	const {time, duration, aspect, width, height} = useShot();
 	const loadedSvg = useSvgFile(logoFile);
 	const logo = useExtrudedSvg(loadedSvg ?? PLACEHOLDER_MARK, {
 		width: 2,
@@ -68,9 +80,7 @@ export const LogoReveal: React.FC<LogoRevealProps> = ({
 	const radius = Math.hypot(logo.width, logo.height) / 2;
 	const distance = fitDistance(radius, fov, aspect, 1.3);
 
-	const turn = landing(frame, fps, 0.15, 'soft');
 	const sweep = span(time, 0.2, duration * 0.72, EASE.glide);
-	const taglineIn = span(time, duration * 0.55, duration * 0.8, EASE.arrive);
 	const lightsUp = span(time, 0.5, 1.6, EASE.glide);
 
 	return (
@@ -120,7 +130,7 @@ export const LogoReveal: React.FC<LogoRevealProps> = ({
 					color={glow}
 				/>
 
-				<group rotation={[0, (turn - 1) * 1.35, 0]}>
+				<Turning>
 					<group scale={[logo.scale, -logo.scale, logo.scale]}>
 						{logo.parts.map((part, index) => (
 							<mesh key={index} geometry={part.geometry} castShadow receiveShadow>
@@ -128,7 +138,7 @@ export const LogoReveal: React.FC<LogoRevealProps> = ({
 							</mesh>
 						))}
 					</group>
-				</group>
+				</Turning>
 
 				<PathCamera
 					fov={fov}
@@ -147,20 +157,21 @@ export const LogoReveal: React.FC<LogoRevealProps> = ({
 					paddingBottom: '13%',
 				}}
 			>
-				<div
-					style={{
-						color: '#f2f3f6',
-						fontFamily: 'Helvetica, Arial, sans-serif',
-						fontWeight: 500,
-						fontSize: width * 0.034,
-						letterSpacing: '0.34em',
-						marginRight: '-0.34em',
-						opacity: taglineIn,
-						transform: `translateY(${(1 - taglineIn) * width * 0.018}px)`,
-					}}
-				>
-					{tagline}
-				</div>
+				<TextReveal
+					place="none"
+					text={tagline}
+					at={duration * 0.55}
+					effect="fade"
+					by="letter"
+					stagger={0.03}
+					duration={0.7}
+					font="body"
+					weight={500}
+					color="#f2f3f6"
+					size={(width * 0.034) / (Math.min(width, height) / 1080)}
+					tracking={0.34}
+					shadow={false}
+				/>
 			</AbsoluteFill>
 		</AbsoluteFill>
 	);

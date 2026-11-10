@@ -119,6 +119,9 @@ const main = async () => {
 			inputProps: {
 				...inputProps,
 				renderSamples: samplesFor({gl, flags, fallback: 4}),
+				// Motion blur only smooths movement, and with so few passes it looks
+				// like noise, so the scan for flashes and jumps runs without it.
+				renderShutter: 0,
 			},
 			imageFormat: 'png',
 			outputDir: null,

@@ -1,6 +1,6 @@
 import React from 'react';
 import {AbsoluteFill} from 'remotion';
-import {MathUtils} from 'three';
+import {MathUtils, Mesh, Texture} from 'three';
 import {
 	AuroraBackdrop,
 	Cue,
@@ -17,6 +17,7 @@ import {
 	Stage,
 	SunLight,
 	useFontFile,
+	useMoving,
 	useRadialFade,
 	useScratchMap,
 	useShot,
@@ -71,6 +72,34 @@ const bounce = (x: number) => {
 	return n * t * t + 0.984375;
 };
 
+// Each letter falls on its own, with motion blur, so the fast part of the drop smears.
+const DroppingLetter: React.FC<{
+	letter: WordLayout['letters'][number];
+	word: WordLayout;
+	scale: number;
+	base: number;
+	delay: number;
+	seed: number;
+	color: string;
+	wear: Texture;
+	castShadow: boolean;
+}> = ({letter, word, scale, base, delay, seed, color, wear, castShadow}) => {
+	// One after another, so that only a letter or two is moving fast at once.
+	const start = delay + letter.index * STAGGER + scatter(seed, letter.index) * 0.04;
+	const tilt = (scatter(seed + 1, letter.index) - 0.5) * 0.6;
+	const mesh = useMoving<Mesh>((object, time) => {
+		const fall = 1 - bounce(MathUtils.clamp((time - start) / DROP_SECONDS, 0, 1));
+		object.position.set(letter.x * scale, base + (letter.y - word.bottom) * scale + fall * DROP_HEIGHT, 0);
+		object.rotation.set(fall * 0.5, 0, fall * tilt);
+		object.visible = time >= start;
+	});
+	return (
+		<mesh ref={mesh} geometry={letter.geometry} scale={scale} castShadow={castShadow} receiveShadow>
+			<meshPhysicalMaterial {...LOOKS.brushedMetal(color)} roughness={0.34} roughnessMap={wear} />
+		</mesh>
+	);
+};
+
 const Row: React.FC<{
 	word: WordLayout;
 	scale: number;
@@ -80,39 +109,23 @@ const Row: React.FC<{
 	tint: (index: number) => string;
 	castShadow: boolean;
 }> = ({word, scale, base, delay, seed, tint, castShadow}) => {
-	const {time} = useShot();
 	const wear = useScratchMap({seed: 21, repeat: [0.7, 0.7]});
 	return (
 		<>
-			{word.letters.map((letter) => {
-				// One after another, so that only a letter or two is moving fast at once.
-				const start = delay + letter.index * STAGGER + scatter(seed, letter.index) * 0.04;
-				const t = MathUtils.clamp((time - start) / DROP_SECONDS, 0, 1);
-				const fall = 1 - bounce(t);
-				const tilt = (scatter(seed + 1, letter.index) - 0.5) * 0.6;
-				return (
-					<mesh
-						key={letter.index}
-						geometry={letter.geometry}
-						position={[
-							letter.x * scale,
-							base + (letter.y - word.bottom) * scale + fall * DROP_HEIGHT,
-							0,
-						]}
-						rotation={[fall * 0.5, 0, fall * tilt]}
-						scale={scale}
-						visible={time >= start}
-						castShadow={castShadow}
-						receiveShadow
-					>
-						<meshPhysicalMaterial
-							{...LOOKS.brushedMetal(tint(letter.index))}
-							roughness={0.34}
-							roughnessMap={wear}
-						/>
-					</mesh>
-				);
-			})}
+			{word.letters.map((letter) => (
+				<DroppingLetter
+					key={letter.index}
+					letter={letter}
+					word={word}
+					scale={scale}
+					base={base}
+					delay={delay}
+					seed={seed}
+					color={tint(letter.index)}
+					wear={wear}
+					castShadow={castShadow}
+				/>
+			))}
 		</>
 	);
 };

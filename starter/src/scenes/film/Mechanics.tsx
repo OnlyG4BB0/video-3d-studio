@@ -1,6 +1,6 @@
 import React, {useLayoutEffect, useMemo} from 'react';
 import {AbsoluteFill} from 'remotion';
-import {ExtrudeGeometry, NoColorSpace, Path, Shape} from 'three';
+import {ExtrudeGeometry, Mesh, NoColorSpace, Path, Shape} from 'three';
 import {
 	Caption,
 	EnvLight,
@@ -17,6 +17,7 @@ import {
 	useBrushedMap,
 	useCanvasTexture,
 	useLathe,
+	useMoving,
 	useShot,
 } from '../../kit';
 import {FOOTER} from './common';
@@ -174,16 +175,18 @@ const useTurnedMap = (radius: number) => {
 };
 
 const Gear: React.FC<{spec: Spec; place: Placed}> = ({spec, place}) => {
-	const {time} = useShot();
 	const geometry = useMemo(() => buildGear(spec.teeth, spec.spokes), [spec.teeth, spec.spokes]);
 	const wear = useTurnedMap((MODULE * spec.teeth) / 2 + MODULE * 1.5);
 	// The train multiplies speed by 46 at its far end, so the input turns very slowly.
-	const angle = place.phase + time * 0.06 * place.ratio;
+	// The fast wheels blur, as they would on camera.
+	const mesh = useMoving<Mesh>((object, time) => {
+		object.rotation.z = place.phase + time * 0.06 * place.ratio;
+	});
 	return (
 		<mesh
+			ref={mesh}
 			geometry={geometry}
 			position={[place.x, place.y, layerZ(spec.layer)]}
-			rotation={[0, 0, angle]}
 			castShadow
 			receiveShadow
 		>

@@ -1,0 +1,58 @@
+{
+  "format": "wide",
+  "dissolve": 0.8,
+  "chapters": [
+    {
+      "scene": "KineticTitle",
+      "seconds": 7,
+      "props": {"text": "VIDEO 3D STUDIO", "reveal": "drop", "subtitle": "VERSION 1.3", "color": "#e2b56c"},
+      "music": {"mood": "epic", "hit": 0.55}
+    },
+    {
+      "scene": "TitleCard",
+      "seconds": 5,
+      "props": {
+        "kicker": "NEW IN 1.3",
+        "title": "Real *motion blur*",
+        "note": "Every pass of a frame is a slice of the shutter",
+        "effect": "decode",
+        "colors": ["#05060b", "#10223a", "#1d4a5c"],
+        "accent": "#7fd4ff"
+      },
+      "music": {"mood": "drive"}
+    },
+    {
+      "scene": "FilmMechanics",
+      "seconds": 9,
+      "music": {"mood": "drive", "transition": "impact"}
+    },
+    {
+      "scene": "TitleCard",
+      "seconds": 7,
+      "props": {
+        "kicker": "NEW IN 1.3",
+        "title": "Text that *types itself*",
+        "note": "Five effects, with sounds that land on every letter",
+        "effect": "type"
+      },
+      "music": {"mood": "lofi", "ambience": "rain"}
+    },
+    {
+      "scene": "TitleCard",
+      "seconds": 6,
+      "props": {
+        "kicker": "NEW IN 1.3",
+        "title": "A *new* sound",
+        "note": "Piano, strings, lo-fi and epic, mixed for every app",
+        "effect": "rise",
+        "colors": ["#07060a", "#231a2e", "#4a2f3a"],
+        "accent": "#ffc98f"
+      },
+      "music": {"mood": "elegy", "transition": "swell"}
+    },
+    {
+      "scene": "FilmEnd",
+      "seconds": 9
+    }
+  ]
+}

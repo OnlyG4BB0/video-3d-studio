@@ -114,6 +114,7 @@ const compositeShader = {
 };
 
 const position = new Vector3();
+const home = new Vector3();
 const right = new Vector3();
 const up = new Vector3();
 const forward = new Vector3();
@@ -209,31 +210,34 @@ export class AccumulatePass extends Pass {
 	) {
 		const {count, limit, focus} = this.settings;
 		const camera = this.camera;
+		const bus = this.bus;
 		const uniforms = this.material.uniforms;
 		const previousAutoClear = renderer.autoClear;
-		const focalPixels =
-			this.height / 2 / Math.tan((camera.fov * Math.PI) / 360);
-
-		const home = camera.position.clone();
-		camera.updateMatrixWorld();
-		right.setFromMatrixColumn(camera.matrixWorld, 0);
-		up.setFromMatrixColumn(camera.matrixWorld, 1);
-		forward.setFromMatrixColumn(camera.matrixWorld, 2).negate();
-
-		let focusDistance = 1;
-		if (focus) {
-			toFocus.set(...focus.target).sub(home);
-			focusDistance = Math.max(toFocus.dot(forward), camera.near);
-		}
+		// With motion blur, every pass poses the scene at its own moment within the shutter.
+		const moving = count > 1 && bus.shutter > 0 && bus.motions.size > 0;
 
 		uniforms.limit.value = limit;
 
 		for (let index = 0; index < count; index++) {
-			const sample = this.bus.sample(index, count);
+			const sample = bus.sample(index, count);
+			if (moving) {
+				bus.pose(sample.time);
+			}
+			camera.updateMatrixWorld();
+			home.copy(camera.position);
+			right.setFromMatrixColumn(camera.matrixWorld, 0);
+			up.setFromMatrixColumn(camera.matrixWorld, 1);
+			forward.setFromMatrixColumn(camera.matrixWorld, 2).negate();
+			const focalPixels = this.height / 2 / Math.tan((camera.fov * Math.PI) / 360);
+			let focusDistance = 1;
+			if (focus) {
+				toFocus.set(...focus.target).sub(home);
+				focusDistance = Math.max(toFocus.dot(forward), camera.near);
+			}
+
 			const [pixelX, pixelY] = sample.pair(1);
 			let offsetX = pixelX - 0.5;
 			let offsetY = pixelY - 0.5;
-			camera.position.copy(home);
 
 			if (focus) {
 				const [lensU, lensV] = sample.pair(2);
@@ -275,10 +279,15 @@ export class AccumulatePass extends Pass {
 			renderer.setRenderTarget(readBuffer);
 			this.quad.render(renderer);
 			renderer.getContext().flush();
+			// Undo the lens offset, so the next pass starts from the true camera position.
+			camera.position.copy(home);
 		}
 
 		camera.clearViewOffset();
-		camera.position.copy(home);
+		if (moving) {
+			// Leave everything where it is at the frame's own moment.
+			bus.pose(bus.frameTime);
+		}
 		camera.updateMatrixWorld();
 		renderer.autoClear = previousAutoClear;
 	}

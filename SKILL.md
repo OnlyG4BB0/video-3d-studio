@@ -37,7 +37,8 @@ Files the user supplies go in the project's `public/` folder.
 | The request is mainly about | Start from | Takes |
 |---|---|---|
 | One object or product | `src/scenes/ProductOrbit.tsx` | `modelFile`, `color`, `backdrop` |
-| A word or short title | `src/scenes/KineticTitle.tsx` | `text`, `fontFile`, `color`, `backdrop` |
+| A word or short title in 3D | `src/scenes/KineticTitle.tsx` | `text`, `reveal` (`stand`, `drop`, `flip`, `grow`), `subtitle`, `fontFile`, `color`, `backdrop`, `mood` |
+| A line of text, a quote or a call to action | `src/scenes/TitleCard.tsx` | `kicker`, `title`, `note`, `effect` (`rise`, `fade`, `pop`, `type`, `decode`), `accent`, `colors`, `mood` |
 | A logo | `src/scenes/LogoReveal.tsx` | `logoFile`, `tagline`, `color`, `glow`, `backdrop` |
 | A room, place or atmosphere | `src/scenes/MorningRoom.tsx` | `wall`, `accent` |
 | Something abstract, liquid or shader-driven | `src/scenes/LiquidForm.tsx` | `look` |
@@ -56,8 +57,8 @@ Remotion renders frames out of order and in several browser tabs at once, so a f
 - Compute everything that changes from `useShot()`. `useState`, `useFrame` animation, `Math.random()` and `Date` give flicker or jumps, so use `wobble` and `scatter` for randomness.
 - Load only from `public/`, through `usePublicFile` or the hooks built on it. A render must not depend on the network.
 - Keep 3D inside `<Stage>`. It owns the render pipeline, so do not add a second render loop or set tone mapping elsewhere.
-- Every frame is drawn many times and averaged, which is where soft shadows, real focus blur and clean edges come from. Anything that should blur within a frame goes in `useEachSample`.
-- Put small text in a normal `AbsoluteFill` above the Stage, as `LogoReveal` does. It stays sharper than 3D text at small sizes.
+- Every frame is drawn many times and averaged, which is where soft shadows, real focus blur, motion blur and clean edges come from. The cameras already blur when they move. Anything else that moves fast, such as falling letters, spinning parts or pieces flying in, should be animated with `useMoving` inside `<Stage>`, worked out from the `time` it is given, so that it blurs too. Other effects that should blur within a frame go in `useEachSample`.
+- Put text in a normal `AbsoluteFill` above the Stage. `TextReveal` animates it in and out and keeps it clear of phone buttons in 9:16, and `Caption` makes chapter titles. Normal text stays sharper than 3D text at small sizes.
 
 ## 4. Check stills before rendering
 
@@ -84,7 +85,7 @@ Then scan every frame for flashes and jumps, using the same `--set` values:
 node tools/check-motion.mjs <Shot> --set format=vertical
 ```
 
-Stills sample only a few moments, so a flash lasting a few frames slips between them. Flat shiny surfaces are the usual cause, because they can mirror a bright light all at once. If the command reports `CHECK`, look at the frames it names and fix them before rendering, unless the sudden change is intended, such as a deliberate cut.
+The scan runs without motion blur, so it sees where everything really is on each frame. Stills sample only a few moments, so a flash lasting a few frames slips between them. Flat shiny surfaces are the usual cause, because they can mirror a bright light all at once. If the command reports `CHECK`, look at the frames it names and fix them before rendering, unless the sudden change is intended, such as a deliberate cut.
 
 ## 5. Render
 
@@ -92,7 +93,7 @@ Stills sample only a few moments, so a flash lasting a few frames slips between 
 node tools/render.mjs <Shot> --set format=vertical --out out/<name>.mp4
 ```
 
-Use `--quality draft` for a half-resolution test. At full quality, shots of 5 to 8 seconds took 36 to 88 seconds on a desktop graphics card. Without one the tools drop to 4 passes per frame, which is much rougher and still far slower, so tell the user and run long renders in the background.
+Use `--quality draft` for a half-resolution test, and `--range 60-120` to render only those frames. `--shutter 0` turns motion blur off, and `--shutter 1` doubles it. At full quality, shots of 5 to 8 seconds took 36 to 88 seconds on a desktop graphics card. Without one the tools drop to 4 passes per frame, which is much rougher and still far slower, so tell the user and run long renders in the background.
 
 Give the user the path to the MP4, its format and length, and how long it took. Be clear that you checked stills and frame-to-frame changes, and did not watch the video play.
 
@@ -101,6 +102,8 @@ Give the user the path to the MP4, its format and length, and how long it took. 
 Apply exactly what the user asked for and leave everything else alone, so a note like "warmer light" does not also change the framing. Check stills again, then re-render.
 
 ## Longer films
+
+`src/scenes/race/` holds a second complete film, `films/race.json`: cars on a simulated circuit, a cut-away flat-six engine and an `engine` cue that synthesises each car as the camera hears it, from the same lap data as the picture. Copy from it for vehicles, machines, night lighting, light trails or sound that must follow motion.
 
 A video with several ideas, or longer than about 15 seconds, works better as a film of short chapters. Each chapter is an ordinary scene with its own camera, light and timing. `src/scenes/Film.tsx` plays them in order and dissolves each into the next, and inside a chapter `useShot()` counts from the start of that chapter, so any scene works unchanged.
 
@@ -117,7 +120,7 @@ If the existing scenes are enough, write the film as a JSON file, with no code a
 }
 ```
 
-Pass it to every tool with `--props-file film.json`. For a chapter that needs new code, add a scene to `src/scenes/registry.ts` and use its name here. `src/scenes/film/` is a complete 90-second example to learn from and copy: a title, a day of moving sunlight, a watch built in code, nine materials, thousands of animated columns, liquid metal, gears and an end card.
+Pass it to every tool with `--props-file film.json`. Chapters bring their scene's own sounds with them, such as a clank for every letter that `KineticTitle` drops or a key for every letter that `TitleCard` types, so the JSON only names the mood. `films/new-in-1.3.json` is a complete example. For a chapter that needs new code, add a scene to `src/scenes/registry.ts` and use its name here. `src/scenes/film/` is a complete 90-second example to learn from and copy: a title, a day of moving sunlight, a watch built in code, nine materials, thousands of animated columns, liquid metal, gears and an end card.
 
 Work in this order, because a mistake found late costs the most:
 
@@ -132,13 +135,15 @@ Aim for 8 to 15 seconds per chapter and one idea in each. Any chapter can also b
 
 Add `--music` to the render command to compose an original soundtrack and put it in the MP4. Do this when the user wants sound. It is synthesised from scratch, with no recordings or samples, and takes seconds.
 
-In a film each chapter names a `mood`. For a single shot, name it on the command line: `--music warm`. The moods and their uses are in `references/toolkit.md`. Cues place individual sounds at exact moments so that they land with the picture. Work out their times from the same numbers as the animation, as `src/scenes/film/Title.tsx` does for its falling letters.
+In a film each chapter names a `mood`, and can add an `ambience` such as rain or wind and a `transition` sound for its dissolve. For a single shot, name the mood on the command line: `--music warm`. The nineteen moods and their uses are in `references/toolkit.md`, from a piano `elegy` to a `lofi` beat, `dnb` and `acid`. Cues place individual sounds at exact moments so that they land with the picture: a whoosh as the camera passes, a key for each typed letter, a deep hit with a camera shake. Work out their times from the same numbers as the animation, as `src/scenes/film/Title.tsx` does for its falling letters, or give the scene a `music(props)` function in the registry, as `KineticTitle` and `TitleCard` do, so the sounds follow whatever text or timing the user chooses.
 
-**You cannot hear the result.** The command prints the overall loudness and the level of each section, which catches a silent or overpowering chapter and nothing more. Tell the user you checked levels and timing but could not listen, and ask them to judge it. If they do not like it, `--seed 2` picks other progressions, `--transpose 3` moves the key, and the mood can be changed. A new version takes seconds with `node tools/music.mjs`, which saves a WAV the user can listen to before anything is re-rendered. Do not promise that automatic copyright systems on social platforms will never flag it.
+The mix is levelled chapter by chapter, then brought to -14 LUFS with true peaks under -1 dBTP, which is what social and streaming apps expect.
+
+**You cannot hear the result.** The command prints the overall loudness, the true peak, how hard the limiter worked and the level of each section, which catches a silent or overpowering chapter and nothing more. Tell the user you checked levels and timing but could not listen, and ask them to judge it. If they do not like it, `--seed 2` picks other progressions, `--transpose 3` moves the key, and the mood can be changed. A new version takes seconds with `node tools/music.mjs`, which saves a WAV the user can listen to before anything is re-rendered. Do not promise that automatic copyright systems on social platforms will never flag it.
 
 ## Limits to be upfront about
 
 - You cannot hear generated music, or watch video play. Say which checks you did.
-- There is no true motion blur, so very fast moves can look stepped. Keep them moderate, or try `--set fps=60`.
+- Motion blur is built from the frame's passes, so in stills and drafts a very fast object can show separate copies. The final render's 64 passes smooth this out. If copies still show, slow the move or raise `--samples`.
 - Lighting is not full ray tracing. Shadows and sky occlusion are soft and accurate, but light does not bounce by itself, so interiors need added fill light.
 - Remotion has its own licence: free for individuals and for companies of up to 3 people, while larger companies need a paid licence from remotion.dev. Mention this if the user seems to be working for a company.

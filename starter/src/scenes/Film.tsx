@@ -21,7 +21,7 @@ export const filmDefaults: FilmProps = {
 	chapters: EXAMPLE_CHAPTERS.map((scene) => ({
 		scene,
 		seconds: SCENES[scene].defaults.seconds,
-		music: SCENES[scene].defaults.music as ShotMusic,
+		music: SCENES[scene].defaults.music as ShotMusic | undefined,
 	})),
 };
 

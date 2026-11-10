@@ -22,6 +22,13 @@ export type WordOptions = {
 	/** Extra space between letters, as a fraction of the size. */
 	tracking?: number;
 	lineHeight?: number;
+	/** How lines line up with each other when there are several. */
+	align?: 'left' | 'center' | 'right';
+	/**
+	 * Moves words onto new lines so that no line is wider than this, in scene
+	 * units. Useful in 9:16, where a long word or title would end up tiny.
+	 */
+	maxWidth?: number;
 };
 
 export type Letter = {
@@ -29,6 +36,8 @@ export type Letter = {
 	index: number;
 	count: number;
 	line: number;
+	/** Which word of the text the letter belongs to, counting from 0. */
+	word: number;
 	/** Centred on the letter, so that rotation pivots around its middle. */
 	geometry: BufferGeometry;
 	x: number;
@@ -75,21 +84,54 @@ const glyphShapes = (glyph: opentype.Glyph, scale: number) => {
 	return path.toShapes();
 };
 
+/** Breaks text into lines no wider than `maxWidth`, at spaces. */
+const wrapText = (font: opentype.Font, text: string, size: number, tracking: number, maxWidth: number) =>
+	text
+		.split('\n')
+		.map((paragraph) => {
+			const widthOf = (line: string) =>
+				font.getAdvanceWidth(line, size) + Math.max(0, [...line].length - 1) * tracking * size;
+			const lines: string[] = [];
+			let line = '';
+			for (const word of paragraph.split(' ')) {
+				const longer = line ? `${line} ${word}` : word;
+				if (line && widthOf(longer) > maxWidth) {
+					lines.push(line);
+					line = word;
+				} else {
+					line = longer;
+				}
+			}
+			lines.push(line);
+			return lines.join('\n');
+		})
+		.join('\n');
+
 const layoutWord = (
 	font: opentype.Font,
-	text: string,
-	{size = 1, depth = 0.2, bevel = 0.02, tracking = 0, lineHeight = 1.15}: WordOptions,
+	source: string,
+	{size = 1, depth = 0.2, bevel = 0.02, tracking = 0, lineHeight = 1.15, align = 'center', maxWidth}: WordOptions,
 ): WordLayout => {
 	const scale = size / font.unitsPerEm;
 	const letters: Letter[] = [];
 	const lineWidths: number[] = [];
+	const lineStarts: number[] = [];
+	const text = maxWidth ? wrapText(font, source, size, tracking, maxWidth) : source;
+	let word = -1;
 
 	text.split('\n').forEach((line, lineIndex) => {
 		let pen = 0;
 		const firstOfLine = letters.length;
 		let previous: opentype.Glyph | null = null;
+		let inWord = false;
 
 		for (const char of line) {
+			if (char.trim() === '') {
+				inWord = false;
+			} else if (!inWord) {
+				inWord = true;
+				word++;
+			}
 			const glyph = font.charToGlyph(char);
 			if (glyph.index === 0 && char.trim() !== '') {
 				throw new Error(
@@ -121,6 +163,7 @@ const layoutWord = (
 					index: letters.length,
 					count: 0,
 					line: lineIndex,
+					word,
 					geometry,
 					x: pen + centreX,
 					y: centreY - lineIndex * size * lineHeight,
@@ -132,16 +175,23 @@ const layoutWord = (
 			previous = glyph;
 		}
 
-		const width = pen - tracking * size;
-		lineWidths.push(width);
-		for (let i = firstOfLine; i < letters.length; i++) {
-			letters[i].x -= width / 2;
-		}
+		lineWidths.push(pen - tracking * size);
+		lineStarts.push(firstOfLine);
 	});
 
 	if (letters.length === 0) {
 		return EMPTY_LAYOUT;
 	}
+
+	// Line the lines up, with the whole block centred on x = 0.
+	const block = Math.max(...lineWidths);
+	lineWidths.forEach((width, line) => {
+		const shift = align === 'left' ? -block / 2 : align === 'right' ? block / 2 - width : -width / 2;
+		const end = line + 1 < lineStarts.length ? lineStarts[line + 1] : letters.length;
+		for (let i = lineStarts[line]; i < end; i++) {
+			letters[i].x += shift;
+		}
+	});
 
 	const top = Math.max(...letters.map((letter) => letter.y + letter.height / 2));
 	const low = Math.min(...letters.map((letter) => letter.y - letter.height / 2));

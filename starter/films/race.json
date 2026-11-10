@@ -1,0 +1,16 @@
+{
+	"format": "wide",
+	"dissolve": 0.8,
+	"fadeIn": 0.6,
+	"fadeOut": 1.6,
+	"chapters": [
+		{"scene": "RaceGrid", "seconds": 20},
+		{"scene": "RaceTrack", "seconds": 22, "music": {"mood": "dnb", "transition": "whoosh"}},
+		{"scene": "RaceCorner", "seconds": 18, "music": {"mood": "halftime", "transition": "whoosh"}},
+		{"scene": "RaceEngine", "seconds": 22, "music": {"mood": "industrial", "transition": "swell"}},
+		{"scene": "RaceValves", "seconds": 18, "music": {"mood": "acid", "transition": "whoosh"}},
+		{"scene": "RacePullOut", "seconds": 18, "music": {"mood": "ascent", "transition": "impact"}},
+		{"scene": "RaceNight", "seconds": 22, "music": {"mood": "nightdrive", "transition": "whoosh"}},
+		{"scene": "RaceShowroom", "seconds": 20, "music": {"mood": "anthem", "transition": "swell"}}
+	]
+}

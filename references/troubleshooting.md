@@ -34,10 +34,14 @@
 | `check-motion` reports a flash | A flat shiny face mirroring a bright light, spread by bloom | Fade the light up after the turn, lower `highlightLimit` to 2, raise roughness to 0.4, keep bloom below 0.2 |
 | Flicker or jumps between frames | Something depends on state or randomness | Compute it from `useShot()`, `wobble` or `scatter` |
 | Everything looks frozen | Value not derived from the frame | Use `time`, `progress` or `frame` |
-| Fast moves look stepped | No motion blur | Slow the move or use `--set fps=60` |
+| A fast object shows several separate copies | Too few passes for how far it moves in one frame | Check the final render, which uses 64 passes, raise `--samples`, or slow the move |
+| Something fast stays sharp while the camera blurs | It is moved through React props, which only change once per frame | Animate it with `useMoving` inside `<Stage>`, from the `time` it is given |
+| Everything looks too smeared | The shutter is open too long for the speed | Lower `finish.shutter` to 0.25, or render with `--shutter 0.25` |
 | `check-motion` reports a long stretch in spinning parts | A wheel turns too far each frame and strobes | Keep the fastest part under about 10 degrees per frame |
 | A sound arrives before or after its moment | The cue time was typed by hand, or the chapter's length changed | Compute `at` from the animation's constants, or use `progress` |
-| One chapter of music is much louder or quieter | Moods differ in energy | Compare the levels that the music tool prints, then change the mood or a cue's `amp` |
+| Typing sounds do not match the letters | The cue's text, start or speed differs from the `type` reveal | Make the cue with `typingCue(text, at, cps)`, using the same three values as the `TextReveal` |
+| One chapter of music is much louder or quieter | A cue or ambience is much louder than its mood | Compare the levels that the music tool prints, then change the cue's `amp`. Chapters are already levelled against each other |
+| The music tool reports a large limiter figure | A deep hit or drum is far louder than the rest | Above about 5 dB, lower that cue's `amp` |
 
 `check-motion` measures how much the brightness of each frame differs from the one before, on a scale of 0 to 255, and flags 15 or more. Ordinary movement in the example scenes stayed below 9.
 
@@ -48,7 +52,9 @@
 | `No shot called "X"` | The message lists valid names. Check `src/Root.tsx` |
 | `No scene called "X"` in a film | Use a name from `src/scenes/registry.ts`. The message lists them |
 | `Chapter "X" lasts ... no longer than its dissolve` | Lengthen the chapter or shorten `dissolve` |
-| `Unknown mood "X"` or `Unknown cue sound "X"` | The message lists the valid names |
+| `Unknown mood "X"`, `Unknown cue sound "X"`, `Unknown ambience` or `Unknown transition` | The message lists the valid names |
+| `This component has to be placed inside <Stage>` | `useMoving`, `useMotion` and `useEachSample` only work inside the Stage. Move them into a small component that the Stage contains, as `Turning` in `LogoReveal.tsx` does |
+| `The music has an invalid sample` | An instrument produced NaN, usually from a power of a negative number in a custom sound. Keep envelope inputs at 0 or more |
 | `Could not add the music to the video` | The WAV is in `out/music/` and the picture in `out/*.no-sound.mp4`. Check the disk space, then run the render again |
 | `The font has no "X" character` | Pick a font that includes it. The default font covers Western European accented letters |
 | `public/X was not found` | Put the file in `public/` and pass the name relative to that folder |

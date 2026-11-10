@@ -4,6 +4,8 @@
 //   node tools/render.mjs ProductOrbit --quality draft
 //   node tools/render.mjs Film --music
 //   node tools/render.mjs ProductOrbit --music warm
+//   node tools/render.mjs Film --range 0-299 --quality draft
+//   node tools/render.mjs ProductOrbit --shutter 0
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -16,6 +18,7 @@ import {
 	PROJECT_ROOT,
 	readProps,
 	samplesFor,
+	shutterFor,
 	TIMEOUT_MS,
 	withRenderer,
 } from './lib.mjs';
@@ -73,7 +76,10 @@ const main = async () => {
 					flags,
 					fallback: SAMPLES[flags.quality ?? 'final'],
 				}),
+				...shutterFor(flags),
 			},
+			// Only part of the shot, as first-last frame, for a quick look at one moment.
+			frameRange: flags.range ? flags.range.split('-').map(Number) : null,
 			outputLocation: pictureLocation,
 			concurrency,
 			overwrite: true,

@@ -7,12 +7,14 @@ Everything here is imported from `../kit` inside a scene. Lengths are in scene u
 - Command line
 - Shot basics
 - Stage and picture finish
+- Motion blur
 - Camera
 - Light
 - Materials and textures
 - Shaders
 - Geometry
 - Text, logos and models
+- Animated text
 - Motion
 - Films and captions
 - Music
@@ -33,11 +35,13 @@ Run from the project folder. `--set name=value` overrides any prop of the shot a
 | `node tools/render.mjs Shot --music warm` | The same with one mood for the whole shot |
 | `node tools/music.mjs Shot --mood warm` | Only the music, as a WAV in `out/music/`, with its levels |
 | `node tools/stills.mjs Film --dissolves` | The middle of every dissolve in a film |
+| `node tools/render.mjs Shot --range 60-120` | Only those frames, for a quick look at one moment |
+| `node tools/render.mjs Shot --shutter 0` | Without motion blur. `--shutter 1` doubles it |
 | `npm run studio` | Live preview in the browser, for the user |
 
 `render` with `--music` and `music` also take `--seed 2` for other progressions and `--transpose 3` to move the key in semitones.
 
-All three tools take `--props-file shot.json`, `--gl angle` or `--gl swangle`, and `--samples 32` to set the passes per frame. The defaults are 24 for stills, 4 for the motion check, 12 for a draft and 64 for a final render. `render` and `check-motion` also take `--concurrency 2`.
+All three tools take `--props-file shot.json`, `--gl angle` or `--gl swangle`, and `--samples 32` to set the passes per frame. `stills` and `render` also take `--shutter`. The defaults are 24 for stills, 4 for the motion check, 12 for a draft and 64 for a final render. `render` and `check-motion` also take `--concurrency 2`.
 
 Common props: `format` (`vertical`, `wide`, `square`), `seconds`, `fps`.
 
@@ -71,8 +75,29 @@ Scene props extend `ShotProps`. Add each scene to `src/scenes/registry.ts` with 
 | `fringe` | Lens colour fringing towards the corners | 0 to 0.002 |
 | `vignette` | Darker corners | 0.2 to 0.45 |
 | `grain` | Film grain, also hides banding | 0.02 to 0.04 |
+| `grade` | A ready-made colour grade: `clean`, `teal-orange`, `warm-film`, `night`, `noir` or `pastel`. Options given with it override it | |
+| `split` | `{shadows, highlights, amount}` pushes one colour into the darks and another into the lights | amount 0.06 to 0.16 |
+| `lift` | Raises the blacks towards grey, for a softer filmic look | 0 to 0.06 |
+| `shutter` | Motion blur, as a fraction of a frame. 0.5 matches most cameras | 0 to 1 |
 
 `useEachSample(({pair, index, count}) => { ... })` runs before each of a frame's passes, for effects that should blur. `pair(seed)` returns two evenly spread numbers from 0 to 1, and `pointOnDisc(u, v)` turns them into a point on a disc. `KineticTitle` uses it to make its floor reflection glossy.
+
+## Motion blur
+
+Each pass of a frame is taken at its own moment within the shutter, so anything that moves during the frame smears as it would through a real camera. `PathCamera` and `OrbitCamera` blur on their own. For an object, move it with `useMoving` inside `<Stage>`:
+
+```tsx
+const Gear: React.FC<{speed: number}> = ({speed}) => {
+  const mesh = useMoving<Mesh>((object, time) => {
+    object.rotation.z = time * speed;
+  });
+  return <mesh ref={mesh} geometry={gear} />;
+};
+```
+
+Work everything out from the `time` it is given, in seconds, never from the frame number, and do not also pass the properties it changes as props. `springAt(time - delay, feel)` and `track(time, keys)` give smooth values at any moment. `useMotion((time) => ...)` does the same for anything that is not a single object, such as a group of instances. Both run at the frame's own time too, so stills and React stay in step.
+
+Scenes that use it: `KineticTitle` and `FilmTitle` (falling letters), `FilmMechanics` (gears), `LogoReveal` (the turn) and `FilmEnd` (pieces flying in).
 
 ## Camera
 
@@ -88,7 +113,11 @@ Scene props extend `ShotProps`. Add each scene to `src/scenes/registry.ts` with 
 ]} />
 ```
 
-Both accept `easing` and `roll`. `PathCamera` also accepts `start` and `end` in seconds. `drift` adds small handheld movement in world units.
+Both accept `easing`, `roll` and `shake`. `PathCamera` also accepts `start` and `end` in seconds. `drift` adds small handheld movement in world units.
+
+Give every key of a `PathCamera` an `at` in seconds to set when the camera passes it. The move then flows through the keys without stopping, speeding up and slowing down to meet each time, and `easing`, `start` and `end` no longer apply.
+
+`shake={[{at: 2.4, amount: 0.04, length: 0.6}]}` jolts the camera at 2.4 seconds and lets it settle over 0.6. `amount` is in world units, so about 0.3% of the camera distance is noticeable. Pair it with a `boom` or `impact` cue at the same time.
 
 ## Light
 
@@ -162,13 +191,42 @@ const model = useModelFile('product.glb', 2.6); // null while loading; stands on
 // {model && <primitive object={model} />}
 ```
 
+`useWord` also takes `align` (`left`, `center`, `right`) for several lines, and `maxWidth` in scene units to move words onto new lines, which keeps a long title readable in 9:16. Each letter has a `word` index as well as `index` and `line`.
+
 `useWord` stops the render with a clear error if the font lacks a character. SVGs must use filled shapes, so strokes need converting to outlines first. `usePublicFile(file, parse)` loads any other file type.
+
+## Animated text
+
+`TextReveal` sets normal text over the picture and animates it in and out. Put it next to `<Stage>`, inside the scene's `AbsoluteFill`:
+
+```tsx
+<TextReveal text="Every frame *written in code*" at={0.8} until={5} effect="type" font="mono" accent="#ffb35c" />
+```
+
+| Prop | Meaning | Default |
+|---|---|---|
+| `text` | Use `\n` for a new line and `*asterisks*` around words to colour them with `accent` | |
+| `at`, `until` | Seconds when it starts to appear and to leave. Without `until` it stays | 0.3 |
+| `effect` | `rise` slides letters up out of a mask, `fade` drifts words into focus, `pop` springs letters up with a bounce, `type` is a typewriter with a cursor, `decode` settles random characters into the text, `none` just shows it | `rise` |
+| `by` | `letter`, `word` or `line`: what appears one after another | `word` for fade, `letter` otherwise |
+| `stagger`, `duration` | Seconds between pieces, and for each piece to arrive | |
+| `cps` | Characters per second for `type` | 14 |
+| `font` | `display` (the bundled Archivo Black), `body` or `mono` | `display` |
+| `size` | Pixels on a frame whose shorter side is 1080, so it scales with every format | 72 |
+| `place` | `center`, `top`, `bottom`, `lower-left`, `upper-left`, or `none` to place it yourself. In 9:16 each stays clear of the apps' buttons | `center` |
+| `align`, `maxWidth`, `tracking`, `lineHeight`, `weight`, `color`, `shadow` | Typography. `maxWidth` is a fraction of the frame's width | |
+
+`typingCue(text, at, cps)` makes the `typing` sound for a `type` reveal, with one key per character at the times they appear, and `typingLength(text, cps)` says how long the typing takes. Use the same three values as the `TextReveal`. `plainText(text)` removes the asterisks. `DISPLAY_FONT`, `BODY_FONT`, `MONO_FONT` and `useDisplayFont()` are there for other text.
 
 ## Motion
 
 - `span(time, start, end, easing)` goes from 0 to 1 between two times in seconds.
-- `landing(frame, fps, delay, feel)` is a spring that may overshoot. `feel` is `firm`, `soft` or `bouncy`.
-- `EASE` has `glide`, `arrive`, `depart` and `steady`.
+- `landing(frame, fps, delay, feel)` is a spring that may overshoot. `feel` is `firm`, `soft`, `bouncy` or `snappy`.
+- `springAt(seconds, feel)` is the same spring at any moment rather than whole frames, for `useMoving`: `springAt(time - delay, 'bouncy')`.
+- `cascade(time, index, {start, stagger, length, easing})` is the progress of item `index` in a staggered sequence.
+- `track(time, [[0, 0], [1.2, 5], [3, 2]])` passes smoothly through keyframes of `[seconds, value]`, without overshooting between them.
+- `shakeAt(time, hits, seed)` is the offset of a camera shake, for moving things other than the camera.
+- `EASE` has `glide`, `arrive`, `depart`, `steady`, `overshoot`, `swift` and `bounce`.
 - `wobble(seed, time, speed)` is smooth repeatable noise, about -1 to 1.
 - `scatter(seed, index)` is a repeatable random number from 0 to 1, for placing things.
 
@@ -190,9 +248,11 @@ The `Film` shot plays a list of chapters. Its props can come from a JSON file wi
 | `props` | Settings on top of the scene's defaults |
 | `music` | `{mood, cues, hit}`, see Music |
 
-The film is shorter than the sum of its chapters, by one dissolve at each join. To build a different film in code, render `<Chapters {...props} scenes={SCENES} />` in a new component and register it in `Root.tsx` with `calculateMetadata={fitFilm}`.
+The film is shorter than the sum of its chapters, by one dissolve at each join. To build a different film in code, render `<Chapters {...props} scenes={SCENES} />` in a new component and register it in `Root.tsx` with `calculateMetadata={({props}) => fitFilm({props: withSceneMusic(props, SCENES)})}`.
 
-`<Caption index="01" title="LIGHT" note="One line of explanation" footer="Shown only in 9:16" />` goes next to `<Stage>`, inside the scene's `AbsoluteFill`. It fades in and out with the shot, adds a soft shade behind the words and keeps clear of phone app buttons in 9:16. `useDisplayFont()`, `DISPLAY_FONT` and `BODY_FONT` are there for other text.
+A scene can carry its own sounds: give its registry entry `music: (props) => ({mood, cues})`, worked out from the same constants as the animation. `Root.tsx` then adds them whenever the scene is a shot or a chapter, together with any mood and cues given for it, through `sceneMusic` and `withSceneMusic`. `KineticTitle` and `TitleCard` work this way.
+
+`<Caption index="01" title="LIGHT" note="One line of explanation" footer="Shown only in 9:16" />` goes next to `<Stage>`, inside the scene's `AbsoluteFill`. Its title rises letter by letter and its note drifts in word by word, over a soft shade that keeps the words readable, clear of phone app buttons in 9:16.
 
 ## Music
 
@@ -206,18 +266,49 @@ The film is shorter than the sum of its chapters, by one dissolve at each join. 
 | `dreamy` | Wide and weightless, scattered sparkles | Abstract and liquid shots |
 | `drive` | Fast and mechanical | Machines, energy, the run-up to an ending |
 | `resolve` | Settles on a major chord | Logos, end cards, the last chapter |
+| `elegy` | Slow felt piano in A minor, strings, a music box when it is long enough | Memories, empty places, quiet endings |
+| `lofi` | Electric piano over a lazy swung beat and record crackle | Coding, cosy rooms, night, anything relaxed |
+| `epic` | Driving strings, big drums and brass rising to a hit | Trailers, launches, anything heroic |
+| `synthwave` | Eighties arpeggios and pads that wait, then a gated beat at `hit` | Sunsets, starts, retro |
+| `dnb` | Drum and bass at 172 bpm with a Reese bass | Speed, chases, racing |
+| `halftime` | Slow heavy snare and sliding 808, silent for a moment at `hit` | Slow motion, tension, a big turn |
+| `industrial` | Metal hits in sixteenths and a distorted kick, full from `hit` | Machines, engines, factories |
+| `acid` | Four to the floor with a squelching line that opens up to `hit` | Revving, building speed |
+| `ascent` | Rising arpeggios over big chords, drums from `hit` | Pull-outs, reveals, lift-off |
+| `nightdrive` | A dark steady synth pulse with echoing plucks | Night, city lights, driving |
+| `anthem` | Piano chords, big drums and a lead that resolves | End cards, the last chapter |
 
-`build` takes `hit`, the moment of the big hit as a fraction of the chapter, for example `{"mood": "build", "hit": 0.6}`.
+`build`, `epic`, `synthwave`, `halftime`, `industrial`, `acid` and `ascent` take `hit`, the moment of the big hit as a fraction of the chapter, for example `{"mood": "build", "hit": 0.6}`. `epic` moves it to the nearest bar line.
+
+| Chapter option | Values |
+|---|---|
+| `ambience` | `rain`, `wind`, `night` (wind and distant crickets) or `vinyl`, under the whole chapter |
+| `transition` | `whoosh` (the default), `impact`, `swell` or `none`: the sound as this chapter dissolves in |
 
 A cue is one sound at one moment: `{"sound": "clank", "at": 1.2}` in seconds from the start of the chapter, or `{"sound": "bell", "progress": 0.5}` as a fraction of it. Use `progress` for anything that scales with the chapter's length.
 
 | Sound | Options |
 |---|---|
 | `bell` | `note` as a MIDI number, `amp`, `pan` |
+| `piano` | `note`, `amp`, `pan`. One felt piano note |
 | `clank` | `pitch` in Hz, `amp`, `pan`. A metal object landing |
-| `impact` | `amp`. A deep hit |
+| `impact` | `amp`. A deep hit, which briefly lowers the music |
+| `boom` | `amp`. A deep falling drop under a big moment, which briefly lowers the music |
 | `riser` | `length` in seconds, `amp`. Climbs and ends at the cue's time |
-| `tick` | `amp`, `pan` |
-| `kick` | `amp` |
+| `swell` | `length`, `amp`. Rising air that ends at the cue's time, like a cymbal played backwards |
+| `whoosh` | `length`, `amp`, `pan`. Air rushing past, loudest at the cue's time: a camera move, something flying by |
+| `shimmer` | `length`, `amp`. Sparkles that gather, for something appearing |
+| `pop` | `pitch`, `amp`, `pan`. A soft blip for something popping onto the screen |
+| `key` | `amp`, `pan`. One keyboard key |
+| `typing` | `text`, `cps`, `amp`. A key for each character, at the times a `type` reveal shows them. Make it with `typingCue` |
+| `tick`, `kick`, `snare`, `taiko` | `amp`, `pan` |
+| `creak` | `amp`, `pan`, `up`. A rusty chain at the end of a swing |
+| `rain`, `wind`, `crickets` | `length`, `amp`. A bed of sound starting at the cue's time |
+| `engine` | Arrays sampled `rate` times a second: `rpm`, `load`, `gain`, `side`, `delay` (Doppler), `squeal`, `road`, optional `scale` (slow motion), `turns` (crank turns, to match the picture), `mech`, `seed`, `amp`. A flat-six as a camera hears it. Make it with `engineCue` in `src/scenes/race/world.ts` |
+| `starter` | `length`, `amp`. A starter motor turning the engine over |
+| `crowd` | `length`, `amp`, `note` (seconds to a cheer). A crowd in the stands |
+| `clunk` | `amp`. A heavy relay, such as start lights switching |
 
-A shot on its own can carry the same `music` object in its default props, as the film's chapters do. The result is mixed to about -14 LUFS, the level most social and streaming apps aim for.
+A shot on its own can carry the same `music` object in its default props, as the film's chapters do.
+
+The mix runs at 48 kHz through a plate reverb, a look-ahead limiter and gentle dither. In a film, each chapter is first levelled against the others so that a quiet piano chapter does not vanish next to a drum-heavy one. The result lands at -14 LUFS with true peaks under -1 dBTP, the level social and streaming apps expect.

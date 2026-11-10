@@ -13,6 +13,7 @@ import {
 	PROJECT_ROOT,
 	readProps,
 	samplesFor,
+	shutterFor,
 	TIMEOUT_MS,
 	withRenderer,
 } from './lib.mjs';
@@ -38,6 +39,7 @@ const main = async () => {
 		const renderProps = {
 			...inputProps,
 			renderSamples: samplesFor({gl, flags, fallback: 24}),
+			...shutterFor(flags),
 		};
 		const last = context.composition.durationInFrames - 1;
 		const timeline = context.composition.props.timeline;

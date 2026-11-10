@@ -195,6 +195,10 @@ export const samplesFor = ({gl, flags, fallback}) => {
 	return gl === 'swangle' ? Math.min(wanted, 4) : wanted;
 };
 
+/** --shutter 0 turns motion blur off; other values set how long the shutter stays open, in frames. */
+export const shutterFor = (flags) =>
+	flags.shutter === undefined ? {} : {renderShutter: Number(flags.shutter)};
+
 export const defaultConcurrency = () =>
 	Math.max(1, Math.min(4, Math.floor(os.cpus().length / 4)));
 

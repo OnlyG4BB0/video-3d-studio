@@ -10,6 +10,7 @@ import {
 	PCFShadowMap,
 	PerspectiveCamera,
 	Vector2,
+	Vector3,
 	WebGLRenderer,
 	WebGLRenderTarget,
 } from 'three';
@@ -29,7 +30,56 @@ const TONES = {
 
 const DEFAULT_SAMPLES = 16;
 
+/** Half a frame: the 180-degree shutter of most film and video cameras. */
+const DEFAULT_SHUTTER = 0.5;
+
+export type SplitTone = {
+	/** A colour pushed into the darker parts of the picture. */
+	shadows: string;
+	/** A colour pushed into the brighter parts. */
+	highlights: string;
+	/** How strongly, 0 to about 0.25. */
+	amount?: number;
+};
+
+export type GradeName = 'clean' | 'teal-orange' | 'warm-film' | 'night' | 'noir' | 'pastel';
+
+/** Ready-made colour grades. Any option given alongside a grade overrides it. */
+export const GRADES: Record<GradeName, Partial<FinishOptions>> = {
+	clean: {},
+	'teal-orange': {contrast: 0.28, saturation: 1.08, split: {shadows: '#1b6d8c', highlights: '#ff9a4d', amount: 0.14}},
+	'warm-film': {
+		contrast: 0.2,
+		saturation: 0.96,
+		warmth: 0.035,
+		lift: 0.03,
+		grain: 0.034,
+		split: {shadows: '#3d3366', highlights: '#ffc98f', amount: 0.08},
+	},
+	night: {contrast: 0.24, saturation: 0.9, warmth: -0.04, split: {shadows: '#1d3d8f', highlights: '#a8ccff', amount: 0.1}},
+	noir: {contrast: 0.42, saturation: 0.06, lift: 0.015, vignette: 0.5, grain: 0.036},
+	pastel: {contrast: 0.08, saturation: 0.88, lift: 0.06},
+};
+
+/** A colour's difference from grey of the same brightness, scaled by `amount`. */
+const tintOf = (hex: string, amount: number) => {
+	const value = parseInt(hex.replace('#', ''), 16);
+	const r = ((value >> 16) & 255) / 255;
+	const g = ((value >> 8) & 255) / 255;
+	const b = (value & 255) / 255;
+	const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+	return new Vector3((r - luma) * amount, (g - luma) * amount, (b - luma) * amount);
+};
+
 export type FinishOptions = {
+	/** A ready-made colour grade. The options below override it. */
+	grade?: GradeName;
+	/**
+	 * Motion blur: how long the shutter stays open, as a fraction of a frame.
+	 * 0.5 matches most cameras, 0 turns it off. It applies to the camera and to
+	 * anything animated with useMotion or useMoving.
+	 */
+	shutter?: number;
 	tone?: keyof typeof TONES;
 	exposure?: number;
 	/** Glow around the brightest areas. 0 turns it off. */
@@ -54,6 +104,10 @@ export type FinishOptions = {
 	vignette?: number;
 	/** Film grain, 0 to about 0.08. It also prevents banding in gradients. */
 	grain?: number;
+	/** Lifts the blacks towards grey, for a softer, filmic look. 0 to about 0.08. */
+	lift?: number;
+	/** Different colours in the shadows and the highlights. */
+	split?: SplitTone;
 };
 
 const GradeShader = {
@@ -67,6 +121,9 @@ const GradeShader = {
 		saturation: {value: 1},
 		warmth: {value: 0},
 		fringe: {value: 0},
+		shadowTint: {value: new Vector3()},
+		highlightTint: {value: new Vector3()},
+		lift: {value: 0},
 	},
 	vertexShader: /* glsl */ `
 		varying vec2 vUv;
@@ -84,6 +141,9 @@ const GradeShader = {
 		uniform float saturation;
 		uniform float warmth;
 		uniform float fringe;
+		uniform vec3 shadowTint;
+		uniform vec3 highlightTint;
+		uniform float lift;
 		varying vec2 vUv;
 
 		float hash(vec3 p) {
@@ -107,6 +167,10 @@ const GradeShader = {
 			float luma = dot(colour, vec3(0.2126, 0.7152, 0.0722));
 			colour = max(mix(vec3(luma), colour, saturation), 0.0);
 			colour *= vec3(1.0 + warmth, 1.0, 1.0 - warmth);
+			float tone = dot(colour, vec3(0.2126, 0.7152, 0.0722));
+			colour += shadowTint * (1.0 - smoothstep(0.0, 0.55, tone));
+			colour += highlightTint * smoothstep(0.45, 1.0, tone);
+			colour = max(lift + colour * (1.0 - lift), 0.0);
 
 			colour *= 1.0 - vignette * smoothstep(0.32, 0.82, length(centred));
 
@@ -119,29 +183,33 @@ const GradeShader = {
 	`,
 };
 
-const Finish: React.FC<FinishOptions & {samples: number}> = ({
-	samples,
-	tone = 'aces',
-	exposure = 1,
-	bloom = 0.15,
-	bloomThreshold = 1,
-	bloomRadius = 0.55,
-	highlightLimit = 6,
-	focus,
-	beams,
-	contrast = 0,
-	saturation = 1,
-	warmth = 0,
-	fringe = 0.0006,
-	vignette = 0.22,
-	grain = 0.025,
-}) => {
+const Finish: React.FC<FinishOptions & {samples: number}> = ({samples, grade = 'clean', ...given}) => {
+	const options = {...GRADES[grade], ...given};
+	const {
+		shutter = DEFAULT_SHUTTER,
+		tone = 'aces',
+		exposure = 1,
+		bloom = 0.15,
+		bloomThreshold = 1,
+		bloomRadius = 0.55,
+		highlightLimit = 6,
+		focus,
+		beams,
+		contrast = 0,
+		saturation = 1,
+		warmth = 0,
+		fringe = 0.0006,
+		vignette = 0.22,
+		grain = 0.025,
+		lift = 0,
+		split,
+	} = options;
 	const gl = useThree((state) => state.gl) as WebGLRenderer;
 	const scene = useThree((state) => state.scene);
 	const camera = useThree((state) => state.camera) as PerspectiveCamera;
 	const bus = useContext(SampleContext)!;
 	const frame = useCurrentFrame();
-	const {width, height} = useVideoConfig();
+	const {width, height, fps} = useVideoConfig();
 
 	const pipeline = useMemo(() => {
 		const target = new WebGLRenderTarget(width, height, {type: HalfFloatType});
@@ -192,6 +260,12 @@ const Finish: React.FC<FinishOptions & {samples: number}> = ({
 		grade.saturation.value = saturation;
 		grade.warmth.value = warmth;
 		grade.fringe.value = fringe;
+		grade.lift.value = lift;
+		grade.shadowTint.value.copy(split ? tintOf(split.shadows, split.amount ?? 0.12) : new Vector3());
+		grade.highlightTint.value.copy(split ? tintOf(split.highlights, split.amount ?? 0.12) : new Vector3());
+		bus.frameTime = frame / fps;
+		bus.frameLength = 1 / fps;
+		bus.shutter = Math.max(0, shutter);
 	});
 
 	useFrame(() => {
@@ -204,6 +278,12 @@ const Finish: React.FC<FinishOptions & {samples: number}> = ({
 
 const samplesFromTools = () => {
 	const value = getInputProps().renderSamples;
+	return typeof value === 'number' ? value : undefined;
+};
+
+/** The tools can turn motion blur off, for example to scan for flashes. */
+const shutterFromTools = () => {
+	const value = getInputProps().renderShutter;
 	return typeof value === 'number' ? value : undefined;
 };
 
@@ -227,6 +307,7 @@ export const Stage: React.FC<StageProps> = ({
 	const {width, height} = useVideoConfig();
 	const bus = useMemo(() => new SampleBus(), []);
 	const count = Math.max(1, samples ?? samplesFromTools() ?? DEFAULT_SAMPLES);
+	const shutter = shutterFromTools() ?? finish?.shutter;
 
 	return (
 		<ThreeCanvas
@@ -244,7 +325,7 @@ export const Stage: React.FC<StageProps> = ({
 			<SampleContext.Provider value={bus}>
 				<color attach="background" args={[background]} />
 				{children}
-				<Finish {...finish} samples={count} />
+				<Finish {...finish} shutter={shutter} samples={count} />
 			</SampleContext.Provider>
 		</ThreeCanvas>
 	);

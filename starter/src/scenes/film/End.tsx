@@ -1,5 +1,6 @@
 import React, {useMemo} from 'react';
 import {AbsoluteFill, interpolate} from 'remotion';
+import {Group} from 'three';
 import {
 	AuroraBackdrop,
 	BODY_FONT,
@@ -7,17 +8,18 @@ import {
 	EASE,
 	EnvLight,
 	fitDistance,
-	landing,
 	lensFov,
 	LOOKS,
 	PathCamera,
 	ShotMusic,
 	ShotProps,
 	span,
+	springAt,
 	Stage,
 	SunLight,
 	useDisplayFont,
 	useExtrudedSvg,
+	useMoving,
 	useScratchMap,
 	useShot,
 } from '../../kit';
@@ -54,9 +56,27 @@ const FROM: [number, number, number][] = [
 	[0, 0, 3],
 ];
 
+// Each piece of the mark flies in from its own side, with motion blur.
+const Arriving: React.FC<{index: number; scale: number; lift: number; children: React.ReactNode}> = ({
+	index,
+	scale,
+	lift,
+	children,
+}) => {
+	const group = useMoving<Group>((object, time) => {
+		const away = 1 - springAt(time - (0.3 + index * 0.22), 'soft');
+		object.position.set(
+			(FROM[index][0] * away) / scale,
+			(-FROM[index][1] * away) / scale,
+			(FROM[index][2] * away + lift) / scale,
+		);
+	});
+	return <group ref={group}>{children}</group>;
+};
+
 export const ChapterEnd: React.FC = () => {
 	useDisplayFont();
-	const {frame, fps, time, duration, aspect, width} = useShot();
+	const {time, duration, aspect, width} = useShot();
 	const mark = useExtrudedSvg(MARK, {width: 2.2, depth: 0.34, bevel: 0.028});
 	const wear = useScratchMap({seed: 31, repeat: [1.2, 1.2], amount: 0.35});
 	const look = useMemo(() => LOOKS.brushedMetal, []);
@@ -108,17 +128,9 @@ export const ChapterEnd: React.FC = () => {
 				>
 					<group scale={[mark.scale, -mark.scale, mark.scale]}>
 						{mark.parts.map((part, index) => {
-							const arrival = landing(frame, fps, 0.3 + index * 0.22, 'soft');
 							const glowing = index === 3;
 							return (
-								<group
-									key={index}
-									position={[
-										(FROM[index][0] * (1 - arrival)) / mark.scale,
-										(-FROM[index][1] * (1 - arrival)) / mark.scale,
-										(FROM[index][2] * (1 - arrival) + (glowing ? 0.3 : 0)) / mark.scale,
-									]}
-								>
+								<Arriving key={index} index={index} scale={mark.scale} lift={glowing ? 0.3 : 0}>
 									<mesh geometry={part.geometry} castShadow receiveShadow>
 										<meshPhysicalMaterial
 											{...look(`#${part.color.getHexString()}`)}
@@ -128,7 +140,7 @@ export const ChapterEnd: React.FC = () => {
 											emissiveIntensity={glowing ? glow * 1.15 : 0}
 										/>
 									</mesh>
-								</group>
+								</Arriving>
 							);
 						})}
 					</group>

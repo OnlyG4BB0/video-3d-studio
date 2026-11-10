@@ -85,9 +85,29 @@ Springs bring things to life: `bouncy` suits playful pieces, `firm` suits most t
 
 For a seamless loop, drive everything from `loop` with whole cycles of sine, and use a full 360-degree orbit with `EASE.steady`.
 
-Things moving fast across the frame look stepped, because there is no motion blur. A large object should take at least half a second to cross the picture, and several falling or rising things should be staggered so that only one or two are at full speed at once.
+Motion blur makes fast movement read as speed rather than as jumps, the way a real camera does. It needs the movement to be animated with `useMoving`, and it needs enough passes: in stills a very fast object shows as several faint copies, which the final render blends into a smear. Stagger several falling or rising things so that only one or two are at full speed at once, which also keeps the picture readable. Keep the default shutter of 0.5. A longer shutter looks dreamy and a shorter one looks like sport footage.
 
 Rotation adds up in anything geared. A gear train multiplies speed at every step, so the last wheel can spin dozens of times faster than the first, and past about 10 degrees per frame it strobes. Start from the fastest wheel and work backwards.
+
+## Text on screen
+
+Pick the entrance by tone. `rise` is confident and suits titles. `fade` is calm and suits notes and quotes. `pop` is playful. `type` suits code, messages and anything personal. `decode` suits technology and data. Use one entrance per shot, and a quieter one, usually `fade`, for the line under it.
+
+Colour one or two words with `*asterisks*`, never a whole sentence: the accent tells the eye where to land.
+
+Leave text on screen for at least 0.3 seconds per word after it has fully arrived, and longer than feels necessary. Viewers read more slowly than the person who wrote it.
+
+In 9:16, keep text between the top 15% and the bottom 22%, which `TextReveal` does for you, and break titles onto two or three short lines rather than shrinking them.
+
+## Sound
+
+Give every clear event on screen its own sound: a clank when something lands, a whoosh when the camera rushes past, a key for each letter typed. One well-timed sound does more than a louder track.
+
+Keep cue times tied to the animation's own numbers, and let a scene work out its sounds from its props, as `KineticTitle` does. A sound that is even a tenth of a second late reads as a mistake.
+
+A camera shake sells an impact only together with its sound. Keep it short and small, and use it once or twice in a film at most.
+
+An `ambience` places a scene in the world. Rain behind a desk at night or wind over an empty park says more than a mood alone, and stays under the music.
 
 ## Films
 

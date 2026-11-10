@@ -1,7 +1,8 @@
 import {useThree} from '@react-three/fiber';
-import React, {useLayoutEffect, useMemo} from 'react';
+import React, {useMemo} from 'react';
 import {CatmullRomCurve3, MathUtils, PerspectiveCamera, Vector3} from 'three';
-import {EASE, wobble} from './motion';
+import {EASE, Key, Shake, shakeAt, track, wobble} from './motion';
+import {useMotion} from './samples';
 import {useShot} from './shot';
 
 export type Vec3 = [number, number, number];
@@ -46,19 +47,16 @@ export const visibleAt = (distance: number, fov: number, aspect: number) => {
 
 type Pose = {position: Vector3; target: Vector3; fov: number; roll: number};
 
-const useCameraPose = ({position, target, fov, roll}: Pose) => {
-	const camera = useThree((state) => state.camera) as PerspectiveCamera;
-	useLayoutEffect(() => {
-		camera.fov = fov;
-		camera.position.copy(position);
-		camera.up.set(0, 1, 0);
-		camera.lookAt(target);
-		if (roll !== 0) {
-			camera.rotateZ(MathUtils.degToRad(roll));
-		}
-		camera.updateProjectionMatrix();
-		camera.updateMatrixWorld();
-	});
+const applyPose = (camera: PerspectiveCamera, {position, target, fov, roll}: Pose) => {
+	camera.fov = fov;
+	camera.position.copy(position);
+	camera.up.set(0, 1, 0);
+	camera.lookAt(target);
+	if (roll !== 0) {
+		camera.rotateZ(MathUtils.degToRad(roll));
+	}
+	camera.updateProjectionMatrix();
+	camera.updateMatrixWorld();
 };
 
 const addDrift = (pose: Pose, drift: number, time: number): Pose => {
@@ -88,22 +86,46 @@ const addDrift = (pose: Pose, drift: number, time: number): Pose => {
 	};
 };
 
-export type CameraKey = {position: Vec3; target: Vec3; fov?: number};
+const addShake = (pose: Pose, shake: Shake[] | undefined, time: number): Pose => {
+	if (!shake || shake.length === 0) {
+		return pose;
+	}
+	const [x, y, z] = shakeAt(time, shake, 61);
+	const offset = new Vector3(x, y, z);
+	return {...pose, position: pose.position.clone().add(offset), target: pose.target.clone().addScaledVector(offset, 0.6)};
+};
+
+export type CameraKey = {
+	position: Vec3;
+	target: Vec3;
+	fov?: number;
+	/**
+	 * Seconds at which the camera passes this point. Give it on every key or on
+	 * none: without it the keys are spread evenly over the move.
+	 */
+	at?: number;
+};
 
 export type PathCameraProps = {
-	/** Points the camera passes through, evenly spaced in time. */
+	/** Points the camera passes through. */
 	keys: CameraKey[];
 	fov?: number;
+	/** Pacing of the whole move, when the keys have no `at`. */
 	easing?: (t: number) => number;
 	/** Handheld-style movement, in world units. 0 is locked off. */
 	drift?: number;
 	roll?: number;
-	/** Limits the move to part of the shot, in seconds. */
+	/** Limits the move to part of the shot, in seconds, when the keys have no `at`. */
 	start?: number;
 	end?: number;
+	/** Jolts from impacts, for example `[{at: 2.4, amount: 0.05}]`. */
+	shake?: Shake[];
 };
 
-/** Moves the camera smoothly through a list of positions and aim points. */
+/**
+ * Moves the camera smoothly through a list of positions and aim points. The
+ * move is motion blurred, as through a real camera.
+ */
 export const PathCamera: React.FC<PathCameraProps> = ({
 	keys,
 	fov = 35,
@@ -112,8 +134,10 @@ export const PathCamera: React.FC<PathCameraProps> = ({
 	roll = 0,
 	start,
 	end,
+	shake,
 }) => {
-	const {time, duration} = useShot();
+	const camera = useThree((state) => state.camera) as PerspectiveCamera;
+	const {duration} = useShot();
 	const curves = useMemo(() => {
 		const positions = keys.map((key) => new Vector3(...key.position));
 		const targets = keys.map((key) => new Vector3(...key.target));
@@ -125,31 +149,40 @@ export const PathCamera: React.FC<PathCameraProps> = ({
 			: null;
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [JSON.stringify(keys)]);
-
+	const timing: Key[] | null =
+		keys.length > 1 && keys.every((key) => key.at !== undefined)
+			? keys.map((key, index) => [key.at as number, index])
+			: null;
 	const from = start ?? 0;
 	const to = end ?? duration;
-	const linear = MathUtils.clamp((time - from) / Math.max(to - from, 1e-6), 0, 1);
-	const t = easing(linear);
 
-	const segment = t * (keys.length - 1);
-	const index = Math.min(Math.floor(segment), Math.max(keys.length - 2, 0));
-	const fovA = keys[index].fov ?? fov;
-	const fovB = keys[Math.min(index + 1, keys.length - 1)].fov ?? fov;
-
-	useCameraPose(
-		addDrift(
-			{
-				position: curves
-					? curves.position.getPoint(t)
-					: new Vector3(...keys[0].position),
-				target: curves ? curves.target.getPoint(t) : new Vector3(...keys[0].target),
-				fov: MathUtils.lerp(fovA, fovB, segment - index),
-				roll,
-			},
-			drift,
-			time,
-		),
-	);
+	useMotion((time) => {
+		// How far along the keys the camera is, from 0 to the last key's index.
+		const segment = timing
+			? track(time, timing)
+			: easing(MathUtils.clamp((time - from) / Math.max(to - from, 1e-6), 0, 1)) * (keys.length - 1);
+		const t = keys.length > 1 ? segment / (keys.length - 1) : 0;
+		const index = Math.min(Math.floor(segment), Math.max(keys.length - 2, 0));
+		const fovA = keys[index].fov ?? fov;
+		const fovB = keys[Math.min(index + 1, keys.length - 1)].fov ?? fov;
+		applyPose(
+			camera,
+			addShake(
+				addDrift(
+					{
+						position: curves ? curves.position.getPoint(t) : new Vector3(...keys[0].position),
+						target: curves ? curves.target.getPoint(t) : new Vector3(...keys[0].target),
+						fov: MathUtils.lerp(fovA, fovB, segment - index),
+						roll,
+					},
+					drift,
+					time,
+				),
+				shake,
+				time,
+			),
+		);
+	});
 	return null;
 };
 
@@ -166,9 +199,11 @@ export type OrbitCameraProps = {
 	easing?: (t: number) => number;
 	drift?: number;
 	roll?: number;
+	/** Jolts from impacts, for example `[{at: 2.4, amount: 0.05}]`. */
+	shake?: Shake[];
 };
 
-/** Circles the camera around a point. */
+/** Circles the camera around a point, with motion blur. */
 export const OrbitCamera: React.FC<OrbitCameraProps> = ({
 	target = [0, 0, 0],
 	distance,
@@ -180,27 +215,38 @@ export const OrbitCamera: React.FC<OrbitCameraProps> = ({
 	easing = EASE.steady,
 	drift = 0,
 	roll = 0,
+	shake,
 }) => {
-	const {time, progress} = useShot();
-	const t = easing(progress);
-	const angle = MathUtils.degToRad(MathUtils.lerp(fromDeg, toDeg, t));
-	const radius = MathUtils.lerp(distance, endDistance ?? distance, t);
-	const centre = new Vector3(...target);
-	useCameraPose(
-		addDrift(
-			{
-				position: new Vector3(
-					centre.x + Math.sin(angle) * radius,
-					centre.y + height,
-					centre.z + Math.cos(angle) * radius,
+	const camera = useThree((state) => state.camera) as PerspectiveCamera;
+	const {fps, durationInFrames} = useShot();
+	const centre = useMemo(() => new Vector3(...target), [target[0], target[1], target[2]]);
+	useMotion((time) => {
+		// The same progress as useShot(), but for any moment rather than whole frames.
+		const progress = durationInFrames > 1 ? MathUtils.clamp((time * fps) / (durationInFrames - 1), 0, 1) : 0;
+		const t = easing(progress);
+		const angle = MathUtils.degToRad(MathUtils.lerp(fromDeg, toDeg, t));
+		const radius = MathUtils.lerp(distance, endDistance ?? distance, t);
+		applyPose(
+			camera,
+			addShake(
+				addDrift(
+					{
+						position: new Vector3(
+							centre.x + Math.sin(angle) * radius,
+							centre.y + height,
+							centre.z + Math.cos(angle) * radius,
+						),
+						target: centre,
+						fov,
+						roll,
+					},
+					drift,
+					time,
 				),
-				target: centre,
-				fov,
-				roll,
-			},
-			drift,
-			time,
-		),
-	);
+				shake,
+				time,
+			),
+		);
+	});
 	return null;
 };

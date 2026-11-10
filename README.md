@@ -12,6 +12,16 @@ checks its own work, and renders MP4 clips on your computer.
 
 [Italiano](README.it.md)
 
+<a href="https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.3.0/flat-out-16x9.mp4"><img src="docs/demo/race.jpg" width="760" alt="Six frames from Flat Out: race cars on the grid at sunset, braking side by side for a hairpin, a cut-away flat-six engine, its camshafts and valves with a rev counter, an x-ray car at night with light trails, and the car under showroom lights"></a>
+
+**[Watch Flat Out, a 2-minute-34 race film](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.3.0/flat-out-16x9.mp4)**<br>
+<sub>Cars racing, a dive into a cut-away flat-six that fires in its real order, night on a wet track, with engines and music synthesised from the same data as the picture. Made from scratch with this skill. 1080p MP4 with sound, 479 MB.</sub>
+
+<a href="https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.3.0/new-in-1.3-16x9.mp4"><img src="docs/demo/new-in-1.3.jpg" width="760" alt="Six frames from the film about version 1.3: gold letters dropping with motion blur, the title VIDEO 3D STUDIO, the words Real motion blur, spinning gears, text typing itself and the words A new sound"></a>
+
+**[Watch New in 1.3, a 39-second film](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.3.0/new-in-1.3-16x9.mp4)**<br>
+<sub>Motion blur, animated type and the new sound, made from scratch with this skill as a JSON file with no code. 1080p MP4 with sound, 119 MB.</sub>
+
 <a href="https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.2.0/film-16x9.mp4"><img src="docs/demo/film.jpg" width="760" alt="Six frames from the demo film: a metal title, a watch, a glass sphere, columns forming the word 3D, a liquid metal planet and brass gears"></a>
 
 **[Download the 90-second demo film](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.2.0/film-16x9.mp4)**<br>
@@ -58,8 +68,10 @@ checks its own work, and renders MP4 clips on your computer.
 - **Rooms and atmospheres.** Sunlight through a window, moving leaf shadows, shafts of light in the air.
 - **Abstract shader pieces.** Liquid metal, iridescent surfaces, drifting colour backdrops.
 - **Custom scenes.** Ask for something new and Claude models it from the kit's building blocks.
-- **Films with chapters.** Join any scenes into a longer film with dissolves. A complete 90-second example is included.
-- **Original music.** A soundtrack synthesised from scratch, with no samples, timed to what happens on screen.
+- **Real motion blur.** Every frame is exposed across a shutter, so fast moves smear the way they do on camera instead of stepping.
+- **Animated text.** Titles and lines that rise, fade, pop, type themselves or decode from random characters, with chosen words in colour, clear of phone buttons in 9:16.
+- **Films with chapters.** Join any scenes into a longer film with dissolves, from a JSON file with no code. Complete examples are included.
+- **Original music and sound.** Nineteen moods synthesised from scratch with no samples, from a felt-piano elegy to drum and bass and acid, plus sound effects that land with the picture: whooshes, impacts, rain, a key for every typed letter, and engines that rev, change gear and pass the camera with a Doppler shift.
 - **Every social format.** 9:16, 16:9 and 1:1 from the same scene, with framing that adapts.
 - **Notes in plain language.** "Warmer light" or "slower camera" changes that one thing.
 
@@ -72,6 +84,7 @@ Each video frame is drawn 64 times with small variations and averaged. The light
 - **Real lens blur** rather than a post-processing imitation
 - **Glossy reflections** that are crisp at the floor and dissolve above it
 - **Volumetric beams** that come out smooth, without banding
+- **Motion blur**, because each pass is taken at its own moment while the shutter is open
 
 ### It checks its own work
 
@@ -131,6 +144,10 @@ A bright room in the morning with leaf shadows on the floor, 16:9, 8 seconds.
 A 40-second film about my coffee brand in four chapters, with music: title, the cup, the roastery, logo.
 ```
 
+```text
+A 6-second title card that types "Hello, world" letter by letter, with typing sounds and lo-fi music.
+```
+
 If the skill does not start on its own, add "use the video-3d-studio skill" to your request.
 
 ## How it works
@@ -157,10 +174,11 @@ Each shot is a [Remotion](https://www.remotion.dev) composition built with [thre
 | Shaders | Rippling liquid material with correct shadows, drifting aurora backdrop |
 | Geometry | Revolved shapes with rounded corners, soft boxes, smooth bevels, seamless studio backdrops |
 | Files | SVG extrusion, TTF/OTF letters, GLB models |
-| Motion | Springs, easing, staggering, repeatable noise for renders that come out the same every time |
-| Finish | Tone mapping, bloom, lens blur, contrast and colour grade, colour fringing, vignette, film grain |
-| Films | Chapters with dissolves, each scene reusable as a chapter, captions that adapt to the format |
-| Music | Eight moods, sounds placed at exact moments, levels mixed for social and streaming apps |
+| Motion | Motion blur, exact springs at any moment, keyframe tracks, staggering, camera shake, repeatable noise for renders that come out the same every time |
+| Finish | Tone mapping, bloom, lens blur, six colour grades, split toning, colour fringing, vignette, film grain |
+| Text | Five animated entrances for normal text, chapter captions, 3D letters that stand, drop, flip or grow, automatic line breaks |
+| Films | Chapters with dissolves, each scene reusable as a chapter, sounds that follow each scene's own animation |
+| Music | Nineteen moods, engines, ambience, transition sounds, effects placed at exact moments, a plate reverb, mixed to -14 LUFS with true peaks under -1 dBTP |
 
 Claude reads the [workflow](SKILL.md), the [toolkit reference](references/toolkit.md) and the [notes on lens, light and timing](references/craft.md) as it needs them.
 
@@ -174,6 +192,7 @@ Claude reads the [workflow](SKILL.md), the [toolkit reference](references/toolki
 | `node tools/render.mjs Film --music` | The film, with its original music |
 | `node tools/music.mjs Shot --mood warm` | Only the music, as a WAV |
 | `node tools/stills.mjs Film --dissolves` | The middle of every dissolve |
+| `node tools/render.mjs Shot --range 60-120` | Only those frames, for a quick look |
 | `npm run studio` | Live preview in the browser |
 
 Any setting can be changed with `--set`, for example `--set format=vertical --set "text=HELLO"`.
@@ -184,11 +203,10 @@ Any setting can be changed with `--set`, for example `--set format=vertical --se
 
 **Disk space.** Each project takes about 1 GB, and the first render in each project downloads a 130 MB headless browser.
 
-**Music.** The soundtrack follows simple rules and is checked by measuring its levels, because Claude cannot hear it. Treat it as a background track and listen before you publish.
+**Music.** The soundtrack follows simple rules and is checked by measuring its loudness and peaks, because Claude cannot hear it. Treat it as a background track and listen before you publish.
 
 **Current limits**
 
-- There is no true motion blur, so very fast moves can look stepped.
 - Lighting is not full ray tracing. Light does not bounce by itself, so interiors are the least photorealistic scenes.
 - SVG logos need filled shapes, so strokes must be converted to outlines first.
 

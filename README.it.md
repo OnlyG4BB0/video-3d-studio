@@ -9,6 +9,16 @@ controlla il proprio lavoro e renderizza video MP4 sul tuo computer.
 
 [English](README.md)
 
+<a href="https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.3.0/new-in-1.3-16x9.mp4"><img src="docs/demo/new-in-1.3.jpg" width="760" alt="Sei fotogrammi del film sulla versione 1.3: lettere dorate che cadono con il motion blur, il titolo VIDEO 3D STUDIO, la scritta Real motion blur, ingranaggi che girano, un testo che si scrive da solo e la scritta A new sound"></a>
+
+<a href="https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.3.0/flat-out-16x9.mp4"><img src="docs/demo/race.jpg" width="760" alt="Sei fotogrammi di Flat Out: auto da corsa in griglia al tramonto, una staccata affiancata al tornante, un motore boxer a sei cilindri in sezione, alberi a camme e valvole con il contagiri, un'auto ai raggi X di notte con le scie luminose e l'auto sotto le luci dello showroom"></a>
+
+**[Guarda Flat Out, un film di gara di 2 minuti e 34](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.3.0/flat-out-16x9.mp4)**<br>
+<sub>Auto in gara, un tuffo in un boxer a sei cilindri in sezione che scoppia nel suo ordine reale, la notte su pista bagnata, con motori e musica sintetizzati dagli stessi dati delle immagini. Realizzato da zero con questa skill. MP4 1080p con audio, 479 MB.</sub>
+
+**[Guarda Novità della 1.3, un film di 39 secondi](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.3.0/new-in-1.3-16x9.mp4)**<br>
+<sub>Motion blur, testi animati e il nuovo audio, realizzato da zero con questa skill come file JSON, senza codice. MP4 1080p con audio, 119 MB.</sub>
+
 <a href="https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.2.0/film-16x9.mp4"><img src="docs/demo/film.jpg" width="760" alt="Sei fotogrammi del film dimostrativo: un titolo di metallo, un orologio, una sfera di vetro, colonne che formano la scritta 3D, un pianeta di metallo liquido e ingranaggi di ottone"></a>
 
 **[Scarica il film dimostrativo di 90 secondi](https://github.com/OnlyG4BB0/video-3d-studio/releases/download/v1.2.0/film-16x9.mp4)**<br>
@@ -55,8 +65,10 @@ controlla il proprio lavoro e renderizza video MP4 sul tuo computer.
 - **Stanze e atmosfere.** Sole che entra dalla finestra, ombre di foglie in movimento, raggi di luce nell'aria.
 - **Pezzi astratti con shader.** Metallo liquido, superfici iridescenti, sfondi di colore in movimento.
 - **Scene su misura.** Chiedi qualcosa di nuovo e Claude lo modella con i pezzi del kit.
-- **Film a capitoli.** Unisci qualsiasi scena in un film più lungo con le dissolvenze. Include un esempio completo di 90 secondi.
-- **Musica originale.** Una colonna sonora sintetizzata da zero, senza campioni, sincronizzata con quello che succede sullo schermo.
+- **Motion blur vero.** Ogni fotogramma è esposto come con l'otturatore di una cinepresa, quindi i movimenti veloci si allungano in una scia invece di andare a scatti.
+- **Testi animati.** Titoli e frasi che salgono, sfumano, saltano fuori, si scrivono da soli o si decodificano da caratteri casuali, con le parole scelte a colori e lontani dai pulsanti delle app in 9:16.
+- **Film a capitoli.** Unisci qualsiasi scena in un film più lungo con le dissolvenze, anche da un file JSON senza codice. Include esempi completi.
+- **Musica e suoni originali.** Diciannove atmosfere sintetizzate da zero senza campioni, da un pianoforte malinconico alla drum and bass e all'acid, più effetti sincronizzati con le immagini: fruscii, colpi, pioggia, un tasto per ogni lettera scritta, e motori che salgono di giri, cambiano marcia e passano davanti alla camera con l'effetto Doppler.
 - **Tutti i formati social.** 9:16, 16:9 e 1:1 dalla stessa scena, con un'inquadratura che si adatta.
 - **Modifiche a parole.** "Luce più calda" o "camera più lenta" cambiano solo quello.
 
@@ -69,6 +81,7 @@ Ogni fotogramma viene disegnato 64 volte con piccole variazioni e poi mediato. L
 - **Sfocatura vera dell'obiettivo**, non un'imitazione applicata dopo
 - **Riflessi lucidi**, netti sul pavimento e sempre più sfumati verso l'alto
 - **Raggi volumetrici** uniformi, senza bande visibili
+- **Motion blur**, perché ogni passaggio viene ripreso in un istante diverso mentre l'otturatore è aperto
 
 ### Controlla il proprio lavoro
 
@@ -128,6 +141,10 @@ Una stanza luminosa al mattino con ombre di foglie sul pavimento, 16:9, 8 second
 Un film di 40 secondi sul mio marchio di caffè in quattro capitoli, con musica: titolo, la tazzina, la torrefazione, logo.
 ```
 
+```text
+Una schermata di 6 secondi che scrive "Ciao, mondo" lettera per lettera, con il suono dei tasti e musica lo-fi.
+```
+
 Se la skill non parte da sola, aggiungi "usa la skill video-3d-studio" alla richiesta.
 
 ## Comandi dentro un progetto
@@ -140,6 +157,7 @@ Se la skill non parte da sola, aggiungi "usa la skill video-3d-studio" alla rich
 | `node tools/render.mjs Film --music` | Il film, con la sua musica originale |
 | `node tools/music.mjs Shot --mood warm` | Solo la musica, in WAV |
 | `node tools/stills.mjs Film --dissolves` | Il centro di ogni dissolvenza |
+| `node tools/render.mjs Shot --range 60-120` | Solo quei fotogrammi, per un controllo veloce |
 | `npm run studio` | Anteprima dal vivo nel browser |
 
 Ogni impostazione si può cambiare con `--set`, ad esempio `--set format=vertical --set "text=CIAO"`.
@@ -150,11 +168,10 @@ Ogni impostazione si può cambiare con `--set`, ad esempio `--set format=vertica
 
 **Spazio su disco.** Ogni progetto occupa circa 1 GB e il primo render di ogni progetto scarica un browser da 130 MB.
 
-**Musica.** La colonna sonora segue regole semplici e viene controllata misurandone i livelli, perché Claude non può ascoltarla. Considerala un sottofondo e ascoltala prima di pubblicare.
+**Musica.** La colonna sonora segue regole semplici e viene controllata misurandone volume e picchi, perché Claude non può ascoltarla. Considerala un sottofondo e ascoltala prima di pubblicare.
 
 **Limiti attuali**
 
-- Non c'è un vero motion blur, quindi i movimenti molto veloci possono sembrare a scatti.
 - L'illuminazione non è un ray tracing completo. La luce non rimbalza da sola, quindi gli interni sono le scene meno fotorealistiche.
 - I loghi SVG devono usare forme piene, quindi i contorni vanno convertiti in tracciati.
 
