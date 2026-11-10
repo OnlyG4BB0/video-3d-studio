@@ -81,9 +81,14 @@ export const RigCamera: React.FC<{rig: Rig; near?: number}> = ({rig, near}) => {
 			camera.updateProjectionMatrix();
 		}
 	}, [camera, near]);
+	const {aspect} = useShot();
 	useMotion((time) => {
 		const shot = rig(time);
-		camera.fov = shot.fov;
+		// The rigs are framed for 16:9. In a tall frame, keep most of that width and
+		// gain height, instead of cropping the sides away.
+		const half = (shot.fov * Math.PI) / 360;
+		camera.fov =
+			aspect < 1 ? (Math.atan((Math.tan(half) * (16 / 9) * 0.8) / aspect) * 360) / Math.PI : shot.fov;
 		camera.position.copy(shot.position);
 		camera.up.set(0, 1, 0);
 		camera.lookAt(shot.target);
